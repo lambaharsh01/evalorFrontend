@@ -24,9 +24,20 @@ npm install sooner
 
 
 
-Use a professional ERP-style design. Keep the layout minimal, clean, and business-oriented. Colors should follow a corporate theme with a light background (#f6f7f9), white cards (#fff), and accents of dark corporate blue (#003366) and muted greys (#dce1e6, #f2f4f7). Typography should be modern sans-serif (Segoe UI, Inter, or Roboto). Buttons should be dark grey (#222) with subtle hover states. Avoid overly rounded corners, bright flashy colors, or playful elements. The design must look serious, trustworthy, and suitable for enterprise dashboards.
+@radix-ui/react-checkbox @radix-ui/react-dialog @radix-ui/react-dropdown @radix-ui/react-label @radix-ui/react-popover @radix-ui/react-radio @radix-ui/react-select @radix-ui/react-separator @radix-ui/react-slot @radix-ui/react-switch @radix-ui/react-tabs
 
 
+
+
+Use a professional ERP-style design. Keep the layout minimal, clean, and business-oriented. Colors should follow a corporate theme with a light background (#f6f7f9), white cards (#fff), and accents of dark corporate blue (#003366) and muted greys (#dce1e6, #f2f4f7). Typography should be modern sans-serif (Segoe UI, Inter, or Roboto). Buttons should be dark grey (#222) with subtle hover states. Avoid overly rounded corners, bright flashy colors, or playful elements.
+I'm using tailwind css, typescript
+
+
+accent of #003366
+
+style={{
+    background: "linear-gradient(to bottom right, #e5f0fa, #faf1f1, #eaf8f0)",
+}}
 
 export const theme = {
   colors: {
