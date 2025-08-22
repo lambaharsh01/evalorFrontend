@@ -90,11 +90,11 @@ const Calendar: React.FC<CalendarProp> = ({ financialYear, month, events }) => {
     };
 
     return (
-        <div className="bg-white pb-6 rounded-lg shadow-sm border border-[#dce1e6] w-full mx-auto">
+        <div className="calendar-section bg-white rounded-lg shadow-sm border border-[#dce1e6] w-full mx-auto">
             {/* Header */}
             <div className="bg-[#003366] border-b border-[#002244] rounded-t-lg">
                 <div className="flex items-center justify-between">
-                    <h2 className="px-6 py-4 text-white">
+                    <h2 className="calendar-title text-white">
                         {month} {financialYear}
                     </h2>
                 </div>

@@ -9,6 +9,9 @@ import {
     Image,
     Headphones,
     MessageSquare,
+    X,
+    ChevronRight,
+    Circle,
 } from "lucide-react";
 import type { SidebarItem, SidebarProp } from "./types";
 import { isMdOrLess, isMdOrMore } from "@/packages/utils/screen";
@@ -122,37 +125,44 @@ const Sidebar: React.FC<SidebarProp> = ({ children }) => {
     };
 
     return (
-        <div className="flex min-h-screen   font-sans">
+        <div className="flex min-h-screen font-sans">
 
             {sidebarOpen && (
                 <aside
                     id="sidebar"
-                    className={`text-sm md:text-lg
+                    className={`side-bar-items-section
                         z-30 w-64 md:w-80 bg-white 
                         shadow-md border-r border-slate-200 transition-transform
                     `}
                 >
-                    {/* Profile */}
-                    <div className="flex items-center ps-5 border-b border-slate-200 h-20"
+
+                    <div
+                        className="sidebar-navbar flex items-center justify-between ps-5 pe-3 border-b border-slate-200"
                         style={{
                             background: "linear-gradient(to bottom right, #e5f0fa, #faf1f1, #eaf8f0)",
                         }}
                     >
+                        {/* Left Section */}
                         <div className="flex items-center space-x-3">
-                            <div className="h-11 w-11 bg-[#003366]/10 rounded-full flex items-center justify-center">
-                                <h1 className="text-[#003366]">HL</h1>
-                            </div>
                             <div>
-                                <h2 className="text-[#003366]">Harsh Yadav Lamba</h2>
-                                <h3 className="text-slate-500">AABBCC</h3>
+                                <h2 className="text-[#003366] font-medium">Harsh Yadav Lamba</h2>
+                                <h3 className="text-slate-500 text-sm">AABBCC</h3>
                             </div>
                         </div>
+
+                        {/* Right Section (Cut Button) */}
+                        <button
+                            onClick={() => { setSidebarOpen(false) }}
+                            className="text-slate-500 hover:text-slate-800 transition cursor-pointer"
+                        >
+                            <X size={20} strokeWidth={2} />
+                        </button>
                     </div>
 
                     {/* Menu */}
-                    <nav className="p-4 space-y-1">
+                    <nav className="space-y-1 py-2">
                         {items.map((item) => (
-                            <div key={item.id} className="flex flex-col">
+                            <div key={item.id} className="side-bar-menu-item flex flex-col">
                                 {/* Main menu item */}
                                 <button
                                     onClick={() => {
@@ -161,44 +171,37 @@ const Sidebar: React.FC<SidebarProp> = ({ children }) => {
                                     }}
                                     className={
                                         `flex items-center justify-between space-x-3 ps-4 py-2 rounded-md transition-colors w-full text-left ${activeMenuItem === item.id
-                                            ? "bg-[#003366]/10 text-[#003366] font-medium"
+                                            ? "bg-[#003366]/10 text-[#003366]"
                                             : "hover:bg-[#f1f2f4] text-slate-700 hover:text-[#003366]"
                                         }`
                                     }
                                 >
-                                    <div className="flex items-center space-x-3">
+                                    <div className="flex items-center space-x-3 cursor-pointer">
                                         <item.icon className="h-5 w-5" />
                                         <span>{item.label}</span>
                                     </div>
+
                                     {/* Show arrow if submenu exists */}
                                     {item.subItems.length > 0 && (
-                                        <svg
-                                            className={`h-4 w-4 transition-transform ${(openMenus[item.id]) ? "rotate-90" : ""
+                                        <ChevronRight
+                                            size={16}
+                                            className={`transition-transform ${openMenus[item.id] ? "rotate-90" : ""
                                                 }`}
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeWidth={2}
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                d="M9 5l7 7-7 7"
-                                            />
-                                        </svg>
+                                        />
                                     )}
                                 </button>
 
                                 {/* Submenu items */}
                                 {item.subItems.length > 0 &&
                                     (openMenus[item.id]) && (
-                                        <div className="ml-8 mt-1 flex flex-col space-y-1 text-xs md:text-sm ">
+                                        <div className="side-bar-menu-sub-item flex flex-col">
                                             {item.subItems.map((sub, idx) => (
                                                 <button
                                                     key={idx}
-                                                    className="text-start ps-8 py-2 text-slate-600 rounded-md hover:bg-[#f1f2f4] hover:text-[#003366]"
+                                                    className="px-3 py-1 flex items-center space-x-2 text-slate-600 rounded-md hover:bg-[#f1f2f4] hover:text-[#003366] cursor-pointer transition"
                                                 >
-                                                    {sub.label}
+                                                    <Circle size={6} className="fill-slate-400 text-slate-400" />
+                                                    <span className="text-sm">{sub.label}</span>
                                                 </button>
                                             ))}
                                         </div>
@@ -212,35 +215,30 @@ const Sidebar: React.FC<SidebarProp> = ({ children }) => {
             {/* Main Content */}
             <div className="flex flex-1 flex-col min-w-0">
                 {/* Header */}
-                <header className="bg-white h-20 border-b border-slate-200 shadow-sm backdrop-blur-sm bg-opacity-95">
-                    <div className="flex items-center justify-between px-6 py-4">
+
+                <header className="sidebar-navbar flex items-center justify-between bg-white border-b border-slate-200 shadow-sm backdrop-blur-sm bg-opacity-95 px-4">
+                    {/* Left side */}
+                    <div className="flex items-center space-x-4">
                         {!sidebarOpen && (
-                            <div className="flex items-center space-x-4">
-                                <button
-                                    onClick={() => setSidebarOpen(!sidebarOpen)}
-                                    className="p-2 hover:bg-[#f1f2f4] rounded-lg transition-colors duration-200"
-                                >
-                                    <Menu className="h-6 w-6 text-[#003366]" />
-                                </button>
-                            </div>
+                            <button
+                                onClick={() => setSidebarOpen(!sidebarOpen)}
+                                className="p-2 hover:bg-[#f1f2f4] rounded-lg transition-colors duration-200"
+                            >
+                                <Menu className="h-6 w-6 text-[#003366]" />
+                            </button>
                         )}
+                    </div>
 
-                        <div className="flex items-center space-x-4">
-                            {/* Notifications */}
-                            {/* <button className="relative p-2 hover:bg-[#f1f2f4] rounded-lg transition-colors duration-200 group">
-                                <Bell className="h-5 w-5 text-slate-600 group-hover:text-[#003366]" />
-                                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
-                                    <span className="w-1.5 h-1.5 bg-white rounded-full"></span>
-                                </span>
-                            </button> */}
-
-                            {/* Settings */}
-                            {/* <button className="p-2 hover:bg-[#f1f2f4] rounded-lg transition-colors duration-200 group">
-                                <Settings className="h-5 w-5 text-slate-600 group-hover:text-[#003366] group-hover:rotate-90 transition-all duration-200" />
-                            </button> */}
-                        </div>
+                    {/* Right side */}
+                    <div className="flex items-center space-x-4">
+                        <button className="relative p-2 hover:bg-[#f1f2f4] rounded-lg transition-colors duration-200 group">
+                            <div className="sidebar-initials-section bg-[#003366]/10 rounded-full flex items-center justify-center w-10 h-10">
+                                <h1 className="text-[#003366] font-bold">HL</h1>
+                            </div>
+                        </button>
                     </div>
                 </header>
+
 
                 {/* Page Content */}
                 <main
@@ -249,7 +247,9 @@ const Sidebar: React.FC<SidebarProp> = ({ children }) => {
                         background: "linear-gradient(to bottom right, #e5f0fa, #faf1f1, #eaf8f0)",
                     }}
                 >
-                    <div className="mx-auto">{children}</div>
+                    {(!isSmallScreen || !sidebarOpen) && (
+                        <div className="mx-auto">{children}</div>
+                    )}
                 </main>
             </div>
         </div>

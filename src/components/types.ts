@@ -79,3 +79,18 @@ export interface CalendarProp {
 }
 
 // CALENDER END
+
+
+// NOTIFICATION 
+
+export interface NotificationProp {
+    id: number
+    message: string
+    date: string   // ISO string or formatted string
+    type?: "info" | "warning" | "success" | "error" // optional
+}
+
+export interface NotificationListProps {
+  notifications: NotificationProp[]
+}
+// NOTIFICATION END

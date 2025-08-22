@@ -17,7 +17,7 @@ export const CustomTableWrapper: React.FC<CustomTableWrapperProp> = ({
     >
         {/* Title */}
         <div
-            className="px-6 py-4 text-white"
+            className="table-title text-white"
             style={{ backgroundColor: "#003366" }}
         >
             <h1>
@@ -32,7 +32,7 @@ export const CustomTableWrapper: React.FC<CustomTableWrapperProp> = ({
         {Boolean(footer) && (
             <div
                 // TEXT SIZE 
-                className="text-sm md:text-base font-medium px-4 py-3 text-[#B8860B]"
+                className="table-footer-div font-medium text-[#B8860B]"
                 style={{ backgroundColor: "#f6f7f9" }}
             >
                 {footer}
@@ -67,9 +67,10 @@ export const CustomTh: React.FC<CustomThProp> = ({
 }) => (
     <th
         className={clsx(
-            "px-3 sm:px-4 lg:px-2 py-3 text-left text-gray-900 border-b border-[#dce1e6]",
+            "text-left text-gray-900 border-b border-[#dce1e6]",
             sticky && "sticky left-0 bg-[#f6f7f9] z-10 shadow-sm",
             partition && "border-r border-[#dce1e6]",
+            (partition ? "after:content-[''] after:absolute after:top-0 after:right-0 after:h-full after:w-px after:bg-[#dce1e6]" : ""),
             className
         )}
     >
@@ -88,15 +89,16 @@ export const CustomTd: React.FC<CustomTdProp> = ({
     <td
         colSpan={colSpan}
         className={clsx(
-            "px-3 sm:px-4 lg:px-2 py-2 text-gray-700 border-b border-[#dce1e6]",
+            "text-gray-700 border-b border-[#dce1e6]",
             sticky && "sticky left-0 bg-white z-10 shadow-sm",
             partition && "border-r border-[#dce1e6]",
+            (partition ? "after:content-[''] after:absolute after:top-0 after:right-0 after:h-full after:w-px after:bg-[#dce1e6]" : ""),
             bold && "font-semibold",
             className
         )}
     >
         {children}
-    </td>
+    </td >
 );
 
 export const CustomTr: React.FC<CustomTrProp> = ({

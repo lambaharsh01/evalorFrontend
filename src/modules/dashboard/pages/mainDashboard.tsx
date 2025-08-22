@@ -8,8 +8,46 @@ import {
 } from "@/components/table";
 import Calendar from "@/components/calendar";
 import LayoutWrapper from "@/components/sidebar";
+import type { NotificationProp } from "@/components/types";
+import Notification from "@/components/notifications";
+
 
 export default function Dashboard() {
+
+
+    const notifications: NotificationProp[] = [
+        {
+            id: 1,
+            message: "1 Team Meeting scheduled for tomorrow at 10 AM",
+            date: "2025-08-22T09:00:00Z",
+            type: "info",
+        },
+        {
+            id: 2,
+            message: "2 Quarterly Review report is due next week",
+            date: "2025-08-21T12:30:00Z",
+            type: "warning",
+        },
+        {
+            id: 3,
+            message: "New product launch event added to the calendar",
+            date: "2025-08-20T15:45:00Z",
+            type: "success",
+        },
+        {
+            id: 4,
+            message: "System maintenance scheduled for 25th Aug",
+            date: "2025-08-19T08:15:00Z",
+            type: "error",
+        },
+        {
+            id: 5,
+            message: " 5 System maintenance scheduled for 25th Aug",
+            date: "2025-08-19T08:15:00Z",
+            type: "error",
+        },
+    ]
+
     const dvrData = [
         { id: "1", division: "North", divisionName: "Alice", totalEntities: 50, submitted: 45, accepted: 42 },
         { id: "2", division: "South", divisionName: "Bob", totalEntities: 40, submitted: 35, accepted: 33 },
@@ -48,7 +86,7 @@ export default function Dashboard() {
                             <CustomTable>
                                 <CustomThead>
                                     <tr>
-                                        <CustomTh>Area</CustomTh>
+                                        <CustomTh sticky>Area</CustomTh>
                                         <CustomTh>AI Name</CustomTh>
                                         <CustomTh>Total Dealers</CustomTh>
                                         <CustomTh>Submitted By AI</CustomTh>
@@ -58,7 +96,7 @@ export default function Dashboard() {
                                 <tbody>
                                     {dvrData.map((row, i) => (
                                         <CustomTr key={row.id} index={i}>
-                                            <CustomTd bold>{row.division}</CustomTd>
+                                            <CustomTd bold sticky>{row.division}</CustomTd>
                                             <CustomTd>{row.divisionName}</CustomTd>
                                             <CustomTd>{row.totalEntities}</CustomTd>
                                             <CustomTd>{row.submitted}</CustomTd>
@@ -79,7 +117,7 @@ export default function Dashboard() {
                             <CustomTable>
                                 <CustomThead>
                                     <tr>
-                                        <CustomTh>Area</CustomTh>
+                                        <CustomTh sticky>Area</CustomTh>
                                         <CustomTh>AI Name</CustomTh>
                                         <CustomTh>Total MoM Points</CustomTh>
                                         <CustomTh>Open MoM Points</CustomTh>
@@ -89,7 +127,7 @@ export default function Dashboard() {
                                 <tbody>
                                     {improvementData.map((row, i) => (
                                         <CustomTr key={row.id} index={i}>
-                                            <CustomTd bold>{row.division}</CustomTd>
+                                            <CustomTd bold sticky>{row.division}</CustomTd>
                                             <CustomTd>{row.divisionName}</CustomTd>
                                             <CustomTd>{row.totalPoints}</CustomTd>
                                             <CustomTd>{row.openPoints}</CustomTd>
@@ -99,7 +137,6 @@ export default function Dashboard() {
                                 </tbody>
                             </CustomTable>
                         </CustomTableWrapper>
-
 
                         <Calendar
                             financialYear="2025-2026"
@@ -115,6 +152,12 @@ export default function Dashboard() {
                                 "2025-08-31": ["New Year Planning"],
                             }}
                         />
+
+                        <Notification
+                            notifications={notifications}
+                        />
+
+
                     </div>
                 </div>
             </div>
