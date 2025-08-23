@@ -94,20 +94,19 @@ const Calendar: React.FC<CalendarProp> = ({ financialYear, month, events }) => {
             {/* Header */}
             <div className="bg-[#003366] border-b border-[#002244] rounded-t-lg">
                 <div className="flex items-center justify-between">
-                    <h2 className="calendar-title text-white">
+                    <h2 className="header-title-padding text-white">
                         {month} {financialYear}
                     </h2>
                 </div>
             </div>
 
             {/* Calendar Grid */}
-            <div className="p-4 sm:p-6">
+            <div className="calendar-grid">
                 {/* Day Headers */}
                 <div className="grid grid-cols-7 gap-2 mb-4">
                     {dayNames.map((day) => (
                         <div key={day} className="text-center py-2">
-                            {/* TEXT SIZE */}
-                            <span className="text-sm md:text-base font-semibold text-[#003366]">{day}</span>
+                            <span className="calendar-day-header font-semibold text-[#003366]">{day}</span>
                         </div>
                     ))}
                 </div>
@@ -135,7 +134,7 @@ const Calendar: React.FC<CalendarProp> = ({ financialYear, month, events }) => {
                                 >
                                     <div className="flex justify-between items-start">
                                         <span
-                                            className={`text-sm font-medium ${getDayCellTextStyle(day)}`}
+                                            className={`calendar-date font-medium ${getDayCellTextStyle(day)}`}
                                         >
                                             {day}
                                         </span>
@@ -148,13 +147,11 @@ const Calendar: React.FC<CalendarProp> = ({ financialYear, month, events }) => {
                                                 <span
                                                     key={i}
                                                     title={event}
-                                                    // TEXT SIZE
-                                                    className={`w-1.5 h-1.5 md:w-3 md:h-3 rounded-full ${eventColors[i % eventColors.length]}`}
+                                                    className={`calendar-event-dot rounded-full ${eventColors[i % eventColors.length]}`}
                                                 ></span>
                                             ))}
                                             {dayEvents.length > 4 && (
-                                                // TEXT SIZE
-                                                <span className="w-1.5 h-1.5 md:w-3 md:h-3 rounded-full bg-[#666] flex items-center justify-center text-[8px] text-white">
+                                                <span className="calendar-event-dot rounded-full bg-[#666] flex items-center justify-center text-[8px] text-white">
                                                     +{dayEvents.length - 4}
                                                 </span>
                                             )}
@@ -166,8 +163,7 @@ const Calendar: React.FC<CalendarProp> = ({ financialYear, month, events }) => {
                                 {hoveredDay === dateStr && hasEvents && (
                                     <div
                                         ref={tooltipRef}
-                                        // TEXT SIZE 
-                                        className="text-xs md:text-sm absolute z-50 top-full mt-2 w-64 bg-[#222] text-white rounded-md p-3 shadow-lg"
+                                        className="calendar-tooltip absolute z-50 top-full mt-2 w-64 bg-[#222] text-white rounded-md p-3 shadow-lg"
                                         style={{
                                             left: tooltipPosition.left,
                                             right: tooltipPosition.right,

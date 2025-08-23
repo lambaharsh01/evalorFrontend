@@ -8,45 +8,12 @@ import {
 } from "@/components/table";
 import Calendar from "@/components/calendar";
 import LayoutWrapper from "@/components/sidebar";
-import type { NotificationProp } from "@/components/types";
 import Notification from "@/components/notifications";
 
 
 export default function Dashboard() {
 
 
-    const notifications: NotificationProp[] = [
-        {
-            id: 1,
-            message: "1 Team Meeting scheduled for tomorrow at 10 AM",
-            date: "2025-08-22T09:00:00Z",
-            type: "info",
-        },
-        {
-            id: 2,
-            message: "2 Quarterly Review report is due next week",
-            date: "2025-08-21T12:30:00Z",
-            type: "warning",
-        },
-        {
-            id: 3,
-            message: "New product launch event added to the calendar",
-            date: "2025-08-20T15:45:00Z",
-            type: "success",
-        },
-        {
-            id: 4,
-            message: "System maintenance scheduled for 25th Aug",
-            date: "2025-08-19T08:15:00Z",
-            type: "error",
-        },
-        {
-            id: 5,
-            message: " 5 System maintenance scheduled for 25th Aug",
-            date: "2025-08-19T08:15:00Z",
-            type: "error",
-        },
-    ]
 
     const dvrData = [
         { id: "1", division: "North", divisionName: "Alice", totalEntities: 50, submitted: 45, accepted: 42 },
@@ -154,7 +121,38 @@ export default function Dashboard() {
                         />
 
                         <Notification
-                            notifications={notifications}
+                            notifications={[
+                                {
+                                    id: 1,
+                                    message: "1 Team Meeting scheduled for tomorrow at 10 AM snfsdjfnk ndsjndf kjsndfns jsnfjnsf kjsndfjsn kjnsekjfn jnsfsnkf jnekfjnwef jnkjefnwkj nwkjfwjn jnkjenfw nwkjefn kjjnef nw jn",
+                                    date: "2025-08-22T09:00:00Z",
+                                    type: "info",
+                                },
+                                {
+                                    id: 2,
+                                    message: "2 Quarterly Review report is due next week",
+                                    date: "2025-08-21T12:30:00Z",
+                                    type: "warning",
+                                },
+                                {
+                                    id: 3,
+                                    message: "New product launch event added to the calendar",
+                                    date: "2025-08-20T15:45:00Z",
+                                    type: "success",
+                                },
+                                {
+                                    id: 4,
+                                    message: "System maintenance scheduled for 25th Aug",
+                                    date: "2025-08-19T08:15:00Z",
+                                    type: "error",
+                                },
+                                {
+                                    id: 5,
+                                    message: " 5 System maintenance scheduled for 25th Aug",
+                                    date: "2025-08-19T08:15:00Z",
+                                    type: "error",
+                                },
+                            ]}
                         />
 
 

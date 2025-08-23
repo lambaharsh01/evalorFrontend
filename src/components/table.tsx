@@ -17,7 +17,7 @@ export const CustomTableWrapper: React.FC<CustomTableWrapperProp> = ({
     >
         {/* Title */}
         <div
-            className="table-title text-white"
+            className="header-title-padding text-white"
             style={{ backgroundColor: "#003366" }}
         >
             <h1>
