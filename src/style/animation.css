@@ -1,0 +1,19 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@layer components {
+  .spin-pulse {
+    @apply absolute inset-0 rounded-full border-4 
+           border-t-[#e5f0fa] border-r-[#faf1f1] border-b-[#eaf8f0] border-l-transparent;
+    animation: spin-pulse 2s linear infinite;
+  }
+}
+
+@keyframes spin-pulse {
+  0%, 100% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.2);
+  }
+}

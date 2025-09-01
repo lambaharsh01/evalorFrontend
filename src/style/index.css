@@ -1,0 +1,173 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@layer base {
+  h1 {
+    @apply font-bold text-sm ; 
+    /* md:text-base xl:text-lg */
+  }
+  h2 {
+    @apply font-medium text-sm 
+    /* md:text-base xl:text-lg; */
+  }
+  h3 {
+    @apply text-[10px] font-medium ;
+    /* md:text-xs xl:text-sm */
+  }
+
+  .header-title-padding  {
+    @apply px-4 py-2 
+    /* md:px-6 md:py-4; */
+  }
+  
+  .table-footer-div {
+    @apply text-xs px-2 py-2 
+    /* md:text-sm xl:text-base md:px-3 md:py-2 xl:px-4 xl:py-3 */
+  }
+  th {
+    @apply text-xs  font-semibold px-3 sm:px-4  py-3 ;
+    /* md:text-sm xl:text-base xl:px-2 */
+  }
+  td {
+    @apply text-xs px-3 sm:px-4 py-2 ;
+    /* md:text-sm xl:text-base xl:px-2 */
+  }
+
+  input {
+    @apply px-1.5 py-1.5 text-xs 
+    /*  md:px-2  md:py-2 md:text-sm xl:text-base */
+  }
+
+  .sidebar-navbar {
+    @apply h-14 
+    /* md:h-20 */
+  }
+  .sidebar-initials-section {
+    @apply w-8 h-8 
+    /* md:h-10 md:w-10 xl:h-12 xl:w-12 */
+  }
+  .side-bar-items-section {
+    @apply text-xs;
+    /* md:text-sm xl:text-base */
+  }
+  .side-bar-menu-item {
+    @apply px-3 font-medium;
+    /* md:px-4 md:py-1  */
+  }
+  .side-bar-menu-sub-item {
+    @apply  ml-8 font-normal space-y-1 ps-6 py-2;
+  }
+  .sidebar-page-title {
+    @apply text-xl ;
+    /* md:text-2xl */
+  }
+
+  
+  
+  .calendar-section  {
+    @apply pb-8;
+    /* md:pb-7 xl:pb-6 */
+  }
+
+
+  .notification-item {
+    @apply p-2;
+    /* md:p-3 xl:p-4 */
+  }
+
+  .notification-text {
+    @apply text-xs
+     /* md:text-sm xl:text-base */
+  }
+
+  .notification-timestamp {
+    @apply text-[10px] 
+    /* md:text-xs xl:text-sm */
+  }
+
+  .calendar-day-header {
+    @apply text-sm 
+    /* md:text-base  */
+  }
+  
+  .calendar-event-dot{
+    @apply w-1.5 h-1.5 
+    /* md:w-3 md:h-3  */
+  }
+  .calendar-tooltip {
+    @apply text-xs 
+    /* md:text-sm  */
+  }
+  .calendar-grid {
+    @apply p-4 sm:p-6 
+  }
+  .calendar-date {
+    @apply text-sm
+  }
+
+
+  .smart-search-w {
+    @apply w-30 md:w-40 xl:w-52
+  }
+  .pagination-navigation-padding {
+    @apply p-2 md:p-3
+  }
+  .pagination-navigation-text {
+    @apply text-xs md:text-sm text-gray-600
+  }
+  .pagination-navigation-text-padding {
+    @apply p-1 md:p-1.5 xl:p-2
+  }
+
+}
+
+
+
+/* RAINBOW BG */
+.rainbow-bg {
+  background: linear-gradient(to bottom right, #e5f0fa, #faf1f1, #eaf8f0);
+  color:#f8fffb;
+}
+
+.sky-bg {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.cumulonimbus-bg {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)
+
+}
+
+.cirrus-bg {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)
+
+}
+
+
+/* RAINBOW BG END */
+
+
+/* SCROLL */
+.thin-scrollbar {
+  border-radius: inherit;
+}
+
+.thin-scrollbar::-webkit-scrollbar {
+  width: 3px;
+  height: 3px;
+}
+
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #003366;
+  border-radius: inherit;
+}
+
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: #f7fafc;
+  border-radius: inherit;
+}
+
+
+/* SCROLL END*/
+  
+

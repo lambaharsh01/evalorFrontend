@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
     Menu,
     LayoutDashboard,
@@ -12,11 +13,14 @@ import {
     X,
     ChevronRight,
     Circle,
+    ArrowLeft,
 } from "lucide-react";
 import type { SidebarItem, SidebarProp } from "./types";
 import { isMdOrLess, isMdOrMore } from "@/packages/utils/screen";
 
-const Sidebar: React.FC<SidebarProp> = ({ children }) => {
+const Sidebar: React.FC<SidebarProp> = ({ children, title }) => {
+
+    const navigate = useNavigate()
 
 
     const [sidebarOpen, setSidebarOpen] = useState<boolean>(isMdOrMore());
@@ -34,7 +38,12 @@ const Sidebar: React.FC<SidebarProp> = ({ children }) => {
 
         const items: SidebarItem[] = [
 
-            { id: "DDDDDD", icon: LayoutDashboard, label: "DDDDD", subItems: [], path: "#" },
+            { id: "1", icon: LayoutDashboard, label: "Dashboard", subItems: [], path: "/" },
+            {
+                id: "2", icon: FileText, label: "EVR", subItems: [
+                    { label: "Manual", path: "/evr-manual" },
+                ]
+            },
             {
                 id: "AAA",
                 icon: MessageSquare,
@@ -53,7 +62,7 @@ const Sidebar: React.FC<SidebarProp> = ({ children }) => {
                     { label: "BBBBB", path: "#" },
                 ],
             },
-            { id: "CCC", icon: FileText, label: "CCC", subItems: [], path: "#" },
+
             { id: "DDD", icon: BarChart, label: "DDD", subItems: [], path: "#" },
             {
                 id: "EEE",
@@ -131,7 +140,7 @@ const Sidebar: React.FC<SidebarProp> = ({ children }) => {
                 <aside
                     id="sidebar"
                     className={`side-bar-items-section
-                        z-30 w-64 md:w-80 bg-white 
+                        z-30 w-60  bg-white 
                         shadow-md border-r border-slate-200 transition-transform
                     `}
                 >
@@ -162,12 +171,17 @@ const Sidebar: React.FC<SidebarProp> = ({ children }) => {
                     {/* Menu */}
                     <nav className="space-y-1 py-2">
                         {items.map((item) => (
-                            <div key={item.id} className="side-bar-menu-item flex flex-col">
+                            <div key={`menu_item_${item.id}`} className="side-bar-menu-item flex flex-col">
                                 {/* Main menu item */}
                                 <button
                                     onClick={() => {
-                                        handleMenuItemClick(item.id);
-                                        if (item.subItems) toggleMenu(item.id);
+                                        handleMenuItemClick(item.id)
+                                        if (item.subItems.length) {
+                                            toggleMenu(item.id)
+                                            return
+                                        };
+
+                                        if (item.path) navigate(item.path)
                                     }}
                                     className={
                                         `flex items-center justify-between space-x-3 ps-4 py-2 rounded-md transition-colors w-full text-left ${activeMenuItem === item.id
@@ -198,6 +212,9 @@ const Sidebar: React.FC<SidebarProp> = ({ children }) => {
                                             {item.subItems.map((sub, idx) => (
                                                 <button
                                                     key={idx}
+                                                    onClick={() => {
+                                                        navigate(sub.path)
+                                                    }}
                                                     className="px-3 py-1 flex items-center space-x-2 text-slate-600 rounded-md hover:bg-[#f1f2f4] hover:text-[#003366] cursor-pointer transition"
                                                 >
                                                     <Circle size={6} className="fill-slate-400 text-slate-400" />
@@ -242,13 +259,29 @@ const Sidebar: React.FC<SidebarProp> = ({ children }) => {
 
                 {/* Page Content */}
                 <main
-                    className="flex-1"
-                    style={{
-                        background: "linear-gradient(to bottom right, #e5f0fa, #faf1f1, #eaf8f0)",
-                    }}
+                    className="rainbow-bg flex-1"
                 >
+
+                    {Boolean(title) && (
+                        <div className="pt-2 ps-4 flex items-center">
+                            {isSmallScreen && <ArrowLeft
+                                className="me-5 cursor-pointer"
+                                size={18}
+                                strokeWidth={2.5}
+                                onClick={() => navigate(-1)}
+                            />}
+                            <h1 className="sidebar-page-title text-[#003366] font-semibold">{title}</h1>
+                        </div>
+                    )}
+
                     {(!isSmallScreen || !sidebarOpen) && (
-                        <div className="mx-auto">{children}</div>
+                        <div
+                            className="min-h-screen mx-auto p-4 pt-2"
+                            style={{
+                                fontFamily: "Inter, Segoe UI, Roboto, sans-serif",
+                            }}
+                        >{children}
+                        </div>
                     )}
                 </main>
             </div>

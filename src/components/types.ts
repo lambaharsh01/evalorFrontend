@@ -1,4 +1,5 @@
 import type { ForwardRefExoticComponent, RefAttributes, SVGProps, ReactNode } from "react";
+import type { TextareaAutosizeProps } from "react-textarea-autosize";
 
 // SIDEBAR
 
@@ -8,6 +9,7 @@ export type LucideIcon = ForwardRefExoticComponent<
 
 export interface SidebarProp {
     children: ReactNode;
+    title?: string;
 }
 
 export interface SidebarSubItem {
@@ -31,7 +33,9 @@ export interface SidebarItem {
 
 export interface CustomTableWrapperProp {
     title: string;
+    headerContent?: React.ReactNode;
     children: React.ReactNode;
+    footerContent?: React.ReactNode;
     footer?: string;
     className?: string;
 }
@@ -70,6 +74,21 @@ export interface CustomTrProp {
 
 // TABLE PROPS END
 
+// PAGINATION PROPS 
+
+
+export interface SmartSearchPaginationProp {
+    onSearch:(value: string) => void;
+}
+
+export interface NavigatePaginationProp {
+    offset: number
+    limit: number
+    total: number
+    setLimit: React.Dispatch<React.SetStateAction<number>>
+    setOffset: React.Dispatch<React.SetStateAction<number>>
+}
+// PAGINATION PROPS END
 
 // CALENDER
 export interface CalendarProp {
@@ -94,3 +113,18 @@ export interface NotificationListProps {
   notifications: NotificationProp[]
 }
 // NOTIFICATION END
+
+
+// FORM
+export interface CustomInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+    label?: string;
+}
+
+export interface CustomTextareaProps extends TextareaAutosizeProps {
+    className?: string;
+    minRows?: number;
+    maxRows?: number;
+}
+
+// FORM END
+

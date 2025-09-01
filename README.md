@@ -33,6 +33,8 @@ Use a professional ERP-style design. Keep the layout minimal, clean, and busines
 I'm using tailwind css, typescript
 
 
+<!-- https://claude.ai/chat/f22e37fa-5f82-4fe0-b644-8bbb8a89877e PARAMETER DESIGN -->
+
 accent of #003366
 
 style={{
@@ -66,3 +68,7 @@ export const theme = {
     base: "Segoe UI, Tahoma, Geneva, Verdana, sans-serif",
   },
 }
+
+
+
+REACT PORTALS
