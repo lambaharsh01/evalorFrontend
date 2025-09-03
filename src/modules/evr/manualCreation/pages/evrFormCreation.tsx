@@ -3,7 +3,7 @@ import { useState } from 'react';
 
 import type { checklist, checklistOptions } from '@/components/evr/types';
 import Loading from '@/components/loading';
-import { CustomNumberInput, CustomTextarea } from '@/components/form';
+import { CustomInput, CustomNumberInput, CustomTextarea } from '@/components/form';
 import { Button } from '@/components/button';
 import { ChevronDown, ChevronUp, Upload } from 'lucide-react';
 
@@ -36,7 +36,7 @@ const EvrFormCreation: React.FC = () => {
 
     const [loading, setLoading] = useState<boolean>(false)
 
-    const checklist1: checklistCreation = {
+    const ch1: checklistCreation = {
         id: 3,
         name: "Politeness & courtesy",
         total: 5,
@@ -60,7 +60,7 @@ const EvrFormCreation: React.FC = () => {
 
     const arr = []
     for (let i = 0; i <= 10; i++) {
-        arr.push({ ...checklist1 })
+        arr.push({ ...ch1 })
     }
 
 
@@ -68,14 +68,28 @@ const EvrFormCreation: React.FC = () => {
     const evrTotal: number = 100
 
     const [parameters, setParameters] = useState<parameterCreation[]>([
-        { id: 1, name: 'XYZ', total: 10, checklists: [checklist1] },
+        { id: 1, name: 'XYZ', total: 10, checklists: [{ ...ch1 }] },
         { id: 1, name: 'AAAAAAAAAA BBBBBBBBB CCCCCCCCCC', total: 10, checklists: [] },
         { id: 1, name: 'SSSSSSSSSSS QQQQQQQQQ', total: 10, checklists: [] },
-        { id: 1, name: 'WWWWWWWWWWWW FFFFFFFFFFF', total: 10, checklists: [checklist1, checklist1] },
+        { id: 1, name: 'WWWWWWWWWWWW FFFFFFFFFFF', total: 10, checklists: [{ ...ch1 }, { ...ch1 }] },
         { id: 1, name: 'VVVVVVVVVVVVV DDDDDDDDDD', total: 10, checklists: [] }
     ]);
     const parameterTotal: number = parameters.reduce((prev, curr) => prev + curr.total, 0)
 
+
+    const handleParameterChange = (e: React.ChangeEvent<HTMLTextAreaElement>, paraIdx: number) => {
+        setParameters(prev => {
+            prev[paraIdx].name = e.target.value
+            return [...prev]
+        })
+    }
+
+    const handleParameterTotalChange = (e: React.ChangeEvent<HTMLInputElement>, paraIdx: number) => {
+        setParameters(prev => {
+            prev[paraIdx].total = Number(e.target.value)
+            return [...prev]
+        })
+    }
 
     // CHECKLIST FUNC
 
@@ -84,13 +98,26 @@ const EvrFormCreation: React.FC = () => {
     const disabledBorder: string = "border border-slate-700"
     const disabledText: string = "text-slate-800"
 
-    const handleExpand = (checklistIdx: number) => {
+    const handleChecklistExpand = (checklistIdx: number) => {
 
         setParameters(prev => {
             prev[activeParameterIndex].checklists[checklistIdx].expand = !prev[activeParameterIndex].checklists[checklistIdx].expand
             return [...prev]
         })
-        // setChecklist({ ...checklist, expand: !checklist.expand }, idx)
+    }
+
+    const handleChecklistChange = (e: React.ChangeEvent<HTMLInputElement>, checklistIdx: number) => {
+        setParameters(prev => {
+            prev[activeParameterIndex].checklists[checklistIdx].name = e.target.value
+            return [...prev]
+        })
+    }
+
+    const handleChecklistTotalChange = (e: React.ChangeEvent<HTMLInputElement>, checklistIdx: number) => {
+        setParameters(prev => {
+            prev[activeParameterIndex].checklists[checklistIdx].total = Number(e.target.value)
+            return [...prev]
+        })
     }
 
 
@@ -130,14 +157,18 @@ const EvrFormCreation: React.FC = () => {
                     </span>
                 </div>
 
-                <Button
-                    size="sm"
-                    className='rounded-xs'
-                >
-                    Add Parameter
-                </Button>
+                <div>
+
+                    <Button
+                        size="sm"
+                        className='rounded-sm'
+                    >
+                        Add Parameter
+                    </Button>
+
+                </div>
             </div>
-            <div className="w-full overflow-x-auto mb-4">
+            <div className="w-full overflow-x-auto">
 
                 <div className="flex shadow-sm">
                     {parameters.map((parameter, idx) => {
@@ -172,10 +203,7 @@ const EvrFormCreation: React.FC = () => {
                                     className="border border-slate-700"
                                     placeholder="Enter parameter..."
                                     value={parameter.name}
-                                    onChange={(e) => setParameters(prev => {
-                                        prev[idx].name = e.target.value
-                                        return [...prev]
-                                    })}
+                                    onChange={e => handleParameterChange(e, idx)}
                                 />
                             </div>
 
@@ -203,10 +231,7 @@ const EvrFormCreation: React.FC = () => {
                                             placeholder='total...'
                                             className='border border-slate-700 rounded-xs font-bold'
                                             value={parameter.total || ""}
-                                            onChange={(e) => setParameters(prev => {
-                                                prev[idx].total = Number(e.target.value)
-                                                return [...prev]
-                                            })}
+                                            onChange={e => handleParameterTotalChange(e, idx)}
                                         />
                                     </div>
                                 </div>
@@ -218,6 +243,16 @@ const EvrFormCreation: React.FC = () => {
 
 
 
+            <div className='w-full flex justify-end py-4'>
+                <Button
+                    size="xs"
+                    className='rounded-sm'
+                >
+                    Add Checklist
+                </Button>
+            </div>
+
+
 
             {parameters?.[activeParameterIndex].checklists.map((checklist, idx) => (
                 <div
@@ -226,7 +261,7 @@ const EvrFormCreation: React.FC = () => {
                 >
                     {/* Header */}
                     <div className="p-2 border-b border-[#cbd5e1] flex items-center justify-between cursor-pointer"
-                        onClick={() => handleExpand(idx)}
+                        onClick={() => handleChecklistExpand(idx)}
                         style={
                             // checklist.completed ? {
                             //     backgroundColor: '#f8fffb',
@@ -239,16 +274,36 @@ const EvrFormCreation: React.FC = () => {
                             }
                         }
                     >
-                        <div className="flex items-center gap-2">
-                            <h2 className={`text-[13.5px] ${disabledText}`}>1.1 {checklist.name}</h2>
+                        <div className="flex items-center gap-2 w-9/12 md:w-10/12 lg:w-11/12">
+                            <h2 className={`text-[13.5px] ${disabledText}`}>{activeParameterIndex + 1}.{idx + 1}</h2>
+                            <div
+                                className='w-full'
+                                onClick={e => e.stopPropagation()}
+                            >
+                                <CustomInput
+                                    type='text'
+                                    className='w-full border border-slate-700 rounded-xs'
+                                    value={checklist.name}
+                                    onChange={(e) => handleChecklistChange(e, idx)}
+                                />
+                            </div>
                         </div>
 
-                        <div className='flex'>
+                        <div className='flex w-3/12 md:w-2/12 lg:w-1/12'>
 
-                            <div className="flex items-center gap-2 px-2 py-1 me-2">
-                                {/* <span className={`font-medium text-[13.5px] ${disabledText}`}>{checklist.recived}/{checklist.total}</span> */}
+                            <div
+                                className="flex items-center gap-2 px-2 py-1"
+                                onClick={e => e.stopPropagation()}
+                            >
+                                <CustomNumberInput
+                                    type="number"
+                                    placeholder='total...'
+                                    className='border border-slate-700 rounded-xs font-medium'
+                                    value={checklist.total || ""}
+                                    onChange={(e) => handleChecklistTotalChange(e, idx)}
+                                />
                             </div>
-                            <div className={`flex items-center gap-2 px-2 py-1 ${disabledText}`}>
+                            <div className={`flex items-center gap-1 px-2 py-1 ${disabledText}`}>
                                 {checklist.expand ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                             </div>
                         </div>
@@ -400,7 +455,8 @@ const EvrFormCreation: React.FC = () => {
                     }
                 </div>
 
-            ))}
+            ))
+            }
         </Sidebar >
     );
 };
