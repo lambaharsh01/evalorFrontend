@@ -1,29 +1,30 @@
 import Sidebar from '@/components/sidebar';
 import { useState } from 'react';
 
-import type { checklist, checklistOptions } from '@/components/evr/types';
+import type { checklistOptions } from '@/components/evr/types';
 import Loading from '@/components/loading';
 import { CustomInput, CustomNumberInput, CustomTextarea } from '@/components/form';
 import { Button } from '@/components/button';
 import { ChevronDown, ChevronUp, Upload } from 'lucide-react';
+import Modal, { ModalHeader } from '@/components/modals';
 
 
 
 export interface checklistCreation {
-    id: number
+    id?: number
     name: string
     total: number;
-    idealRequirement: string
-    scoringCriterion: string[]
-    imageSample?: string
-    evidences: null[]
+    idealRequirement: null | string
+    scoringCriterion: null | string[]
+    imageSample: null | string
+    evidences: null | null[]
     evidenceMandate: true
     evidenceType: string
     options: checklistOptions[]
+    optionsType: null | "bool" | "custom"
     expand: boolean,
     liveCapture: boolean,
 }
-
 
 export interface parameterCreation {
     id?: number;
@@ -32,12 +33,40 @@ export interface parameterCreation {
     checklists: checklistCreation[],
 }
 
+export interface checklistCreationScoring {
+    checklistIdx: number
+    checklist: checklistCreation
+}
 const EvrFormCreation: React.FC = () => {
 
-    const [loading, setLoading] = useState<boolean>(false)
+    const emptyParameter: parameterCreation = {
+        name: 'XYZ',
+        total: 10,
+        checklists: []
+    }
+    const emptyChecklist: checklistCreation = {
+        name: "",
+        total: 0,
+        idealRequirement: " ",
+        scoringCriterion: null,
+        imageSample: "",
+        evidences: [null, null],
+        evidenceMandate: true,
+        evidenceType: "image/*",
+        options: [{ key: "No", value: 0 }, { key: "Yes", value: 5 }],
+        optionsType: null,
+
+
+        expand: false,
+        liveCapture: true,
+    }
+
+    const [loading] = useState<boolean>(false)
+
+    const [checklistScoring, setChecklistScoring] = useState<null | checklistCreationScoring>(null)
+
 
     const ch1: checklistCreation = {
-        id: 3,
         name: "Politeness & courtesy",
         total: 5,
         idealRequirement: `The service provider must demonstrate professional behavior, 
@@ -68,14 +97,20 @@ const EvrFormCreation: React.FC = () => {
     const evrTotal: number = 100
 
     const [parameters, setParameters] = useState<parameterCreation[]>([
-        { id: 1, name: 'XYZ', total: 10, checklists: [{ ...ch1 }] },
-        { id: 1, name: 'AAAAAAAAAA BBBBBBBBB CCCCCCCCCC', total: 10, checklists: [] },
-        { id: 1, name: 'SSSSSSSSSSS QQQQQQQQQ', total: 10, checklists: [] },
-        { id: 1, name: 'WWWWWWWWWWWW FFFFFFFFFFF', total: 10, checklists: [{ ...ch1 }, { ...ch1 }] },
-        { id: 1, name: 'VVVVVVVVVVVVV DDDDDDDDDD', total: 10, checklists: [] }
+        { id: 0, name: 'XYZ', total: 10, checklists: [{ ...ch1 }] },
+        { id: 0, name: 'AAAAAAAAAA BBBBBBBBB CCCCCCCCCC', total: 10, checklists: [] },
+        { id: 0, name: 'SSSSSSSSSSS QQQQQQQQQ', total: 10, checklists: [] },
+        { id: 0, name: 'WWWWWWWWWWWW FFFFFFFFFFF', total: 10, checklists: [{ ...ch1 }, { ...ch1 }] },
+        { id: 0, name: 'VVVVVVVVVVVVV DDDDDDDDDD', total: 10, checklists: [] }
     ]);
     const parameterTotal: number = parameters.reduce((prev, curr) => prev + curr.total, 0)
 
+    const handleAddParameter = () => {
+        setParameters(prev => {
+            prev.push(structuredClone(emptyParameter))
+            return [...prev]
+        })
+    }
 
     const handleParameterChange = (e: React.ChangeEvent<HTMLTextAreaElement>, paraIdx: number) => {
         setParameters(prev => {
@@ -93,7 +128,16 @@ const EvrFormCreation: React.FC = () => {
 
     // CHECKLIST FUNC
 
-    const activeParameterIndex: number = 3
+    const handleAddChecklist = () => {
+        setParameters(prev => {
+            prev[activeParaIdx].checklists.push(structuredClone(emptyChecklist))
+            return [...prev]
+
+        })
+
+    }
+
+    const activeParaIdx: number = 3
 
     const disabledBorder: string = "border border-slate-700"
     const disabledText: string = "text-slate-800"
@@ -101,25 +145,41 @@ const EvrFormCreation: React.FC = () => {
     const handleChecklistExpand = (checklistIdx: number) => {
 
         setParameters(prev => {
-            prev[activeParameterIndex].checklists[checklistIdx].expand = !prev[activeParameterIndex].checklists[checklistIdx].expand
+            prev[activeParaIdx].checklists[checklistIdx].expand = !prev[activeParaIdx].checklists[checklistIdx].expand
             return [...prev]
         })
     }
 
     const handleChecklistChange = (e: React.ChangeEvent<HTMLInputElement>, checklistIdx: number) => {
         setParameters(prev => {
-            prev[activeParameterIndex].checklists[checklistIdx].name = e.target.value
+            prev[activeParaIdx].checklists[checklistIdx].name = e.target.value
             return [...prev]
         })
     }
 
     const handleChecklistTotalChange = (e: React.ChangeEvent<HTMLInputElement>, checklistIdx: number) => {
         setParameters(prev => {
-            prev[activeParameterIndex].checklists[checklistIdx].total = Number(e.target.value)
+            prev[activeParaIdx].checklists[checklistIdx].total = Number(e.target.value)
             return [...prev]
         })
     }
 
+    const handleSetChecklistScoring = (checklistIdx: number) => {
+
+        const activeChecklistCreation: checklistCreationScoring = {
+            checklistIdx: checklistIdx,
+            checklist: parameters[activeParaIdx].checklists[checklistIdx]
+        }
+        setChecklistScoring(activeChecklistCreation)
+    }
+
+    const setChecklistOptionsType = (checklistIdx: number, type: "bool" | "custom") => {
+        setParameters(prev => {
+            prev[activeParaIdx].checklists[checklistIdx].optionsType = type
+            return [...prev]
+        })
+
+    }
 
     if (loading) return <Loading />
 
@@ -162,6 +222,7 @@ const EvrFormCreation: React.FC = () => {
                     <Button
                         size="sm"
                         className='rounded-sm'
+                        onClick={handleAddParameter}
                     >
                         Add Parameter
                     </Button>
@@ -247,6 +308,7 @@ const EvrFormCreation: React.FC = () => {
                 <Button
                     size="xs"
                     className='rounded-sm'
+                    onClick={handleAddChecklist}
                 >
                     Add Checklist
                 </Button>
@@ -254,7 +316,7 @@ const EvrFormCreation: React.FC = () => {
 
 
 
-            {parameters?.[activeParameterIndex].checklists.map((checklist, idx) => (
+            {parameters[activeParaIdx].checklists.map((checklist, idx) => (
                 <div
                     className="bg-white rounded-sm border border-[#cbd5e1] text-xs shadow-md mb-2"
                     key={`checklist_${idx}`}
@@ -275,7 +337,7 @@ const EvrFormCreation: React.FC = () => {
                         }
                     >
                         <div className="flex items-center gap-2 w-9/12 md:w-10/12 lg:w-11/12">
-                            <h2 className={`text-[13.5px] ${disabledText}`}>{activeParameterIndex + 1}.{idx + 1}</h2>
+                            <h2 className={`text-[13.5px] ${disabledText}`}>{activeParaIdx + 1}.{idx + 1}</h2>
                             <div
                                 className='w-full'
                                 onClick={e => e.stopPropagation()}
@@ -323,27 +385,55 @@ const EvrFormCreation: React.FC = () => {
                                     }
                                 }>
                                 {/* Requirement & Criteria */}
-                                <div className={`grid gap-4 items-stretch ${checklist.idealRequirement && checklist.scoringCriterion.length
+                                <div className={`grid gap-4 items-stretch ${checklist.idealRequirement && checklist.scoringCriterion?.length
                                     ? "grid-cols-1 md:grid-cols-2"
                                     : "grid-cols-1"
                                     }`}
                                 >
                                     {Boolean(checklist.idealRequirement) && (
                                         <div className="flex flex-col space-y-2">
-                                            <h3 className={`font-medium text-[13.5px] ${disabledText}`}>Ideal Requirement:</h3>
-                                            <div className={`rounded-sm p-3 text-xs overflow-y-auto flex-1 leading-relaxed bg-gradient-to-br from-slate-50 to-slate-100 text-slate-600 border border-[#cbd5e1]`}>
-                                                <p className="whitespace-pre-line">{checklist.idealRequirement}</p>
-                                            </div>
+                                            <h3 className={`font-medium text-[13.5px] ${disabledText}`}>
+                                                Ideal Requirement:
+                                            </h3>
+                                            <div
+                                                contentEditable={true} // Makes the div editable
+                                                className={`rounded-sm p-3 text-xs overflow-y-auto flex-1 leading-relaxed bg-gradient-to-br from-slate-50 to-slate-100 text-slate-600 border border-[#cbd5e1]`}
+                                                data-placeholder="Enter Ideal Requirement for the checklist.." // Optional, custom implementation needed for placeholder
+                                                onInput={(e) => {
+                                                    console.log(e.currentTarget.textContent); // Handle text changes
+                                                }}
+                                            ></div>
                                         </div>
                                     )}
 
-                                    {Boolean(checklist.scoringCriterion.length) && (
+                                    {Boolean(checklist.scoringCriterion?.length) && (
                                         <div className="flex flex-col space-y-2">
                                             <h3 className={`font-medium text-[13.5px] ${disabledText}`}>Scoring Criteria:</h3>
                                             <div className={`rounded-sm p-3 text-xs overflow-y-auto flex-1 leading-relaxed bg-gradient-to-br from-slate-50 to-slate-100 text-slate-600 border border-[#cbd5e1]`}>
-                                                <ul className="list-disc pl-4 space-y-1">
-                                                    {checklist.scoringCriterion.map((c, i) => (
-                                                        <li key={i} className="text-xs">{c}</li>
+
+                                                <ul className="pl-0 space-y-2 w-full">
+                                                    {checklist.scoringCriterion?.map((c, i) => (
+                                                        <li
+                                                            key={i}
+                                                            className="w-full bg-gradient-to-br from-slate-50 to-slate-100 rounded p-0.5 grid grid-cols-[auto_1fr] items-center gap-2"
+                                                        >
+                                                            {/* Cross button */}
+                                                            <button
+                                                                type="button"
+                                                                className="text-gray-500 hover:text-red-500 font-bold"
+                                                            // onClick={() => handleRemove(i)}
+                                                            >
+                                                                ×
+                                                            </button>
+
+                                                            {/* CustomInput */}
+                                                            <CustomInput
+                                                                type="text"
+                                                                className="w-full bg-white border border-slate-700 rounded-xs px-2 py-1 text-xs"
+                                                                value={c}
+                                                            // onChange={(e) => handleChange(i, e.target.value)}
+                                                            />
+                                                        </li>
                                                     ))}
                                                 </ul>
                                             </div>
@@ -351,104 +441,89 @@ const EvrFormCreation: React.FC = () => {
                                     )}
                                 </div>
 
-                                {/* Evidence & Score */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-                                    {(Boolean(checklist.imageSample) || Boolean(checklist.evidences.length)) && (
-                                        <div className="space-y-2">
-                                            <h3 className={`font-medium text-[13.5px] ${disabledText}`}>Sample Image & Evidence Upload:</h3>
-                                            <div className={`flex p-2 rounded items-center gap-3 bg-gradient-to-br from-white to-slate-50 ${disabledBorder}`}>
+                                <div className="flex flex-wrap -mx-2">
+                                    {/* negative margin to offset inner padding */}
 
-                                                {Boolean(checklist.imageSample) && (<>
-                                                    <div className="w-10 h-10 mx-2 border-[#cbd5e1] rounded flex items-center justify-center text-xs text-slate-500">
-                                                        <img
-                                                            className="h-full w-full rounded"
-                                                            src={checklist.imageSample ?? ""}
-                                                            loading="lazy"
-                                                            alt="Sample image"
-                                                        />
-                                                    </div>
-
-                                                    <div className="h-10 border border-[#cbd5e1] "></div>
-
-                                                </>
-                                                )}
-
-                                                <div className="flex-1 flex justify-around items-center">
-                                                    {checklist.evidences.map((evd, idxx) => (
-                                                        <div
-                                                            key={`evidence_${checklist.id}_${idxx}`}
-                                                            className={`w-10 h-10 border border-[#cbd5e1] rounded flex items-center justify-center text-xs text-slate-600 cursor-pointer transition-colors`}
-                                                        >
-                                                            <Upload
-                                                                className="w-4 h-4"
-                                                            // onClick={() => }
-                                                            />
-
-
-                                                            {/* < input
-                                                                type="file"
-                                                                accept={checklist.evidenceType}
-                                                                disabled={checklist.disabled}
-                                                                onClick={handleFileClick}
-                                                                className="hidden"
-                                                                capture={checklist.liveCapture ? "environment" : undefined}
-                                                                ref={(inputRef) => {
-                                                                    refs.current[idxx] = inputRef
-                                                                }}
-                                                                onChange={handleFileChange}
-                                                            /> */}
-                                                        </div>
-                                                    ))}
-                                                </div>
+                                    <div className="px-2 w-1/2 md:w-1/2 lg:w-1/4 space-y-2">
+                                        <h3 className={`font-medium text-[13.5px] ${disabledText}`}>Sample Image</h3>
+                                        <div className={`flex justify-around p-2 rounded items-center gap-3 bg-gradient-to-br from-white to-slate-50 ${disabledBorder}`}>
+                                            <div className="w-10 h-10 border border-[#cbd5e1] rounded flex items-center justify-center text-xs text-slate-600 cursor-pointer transition-colors">
+                                                <Upload className="w-4 h-4" />
                                             </div>
-                                        </div>
-                                    )}
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <h3 className={`font-medium text-[13.5px] ${disabledText}`}>Score:</h3>
-                                            <select
-                                                className={`w-full h-14 px-3 py-2 rounded-sm text-xs focus:outline-none transition-all bg-white bg-gradient-to-br from-white to-slate-50 ${disabledBorder} ${disabledText}`}
-                                            // value={checklist.recived}
-                                            // onChange={handleScoreChange}
-                                            // disabled={checklist.disabled}
-                                            >
-                                                <option value="">Select</option>
-                                                {checklist.options.map((opt, idxx) => (
-                                                    <option key={`option_${checklist.id}_${idxx}`} value={opt.value}>{opt.key}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <h3 className={`font-medium text-[13.5px] ${disabledText}`}>Options:</h3>
-                                            <div className={`p-2 rounded-sm bg-gradient-to-br from-white to-slate-50 ${disabledBorder}`}>
-                                                <label className={`h-10 flex items-center gap-2 text-xs cursor-pointer transition-colors ${disabledText}`}>
-                                                    <input
-                                                        // disabled={checklist.disabled}
-                                                        type="checkbox"
-                                                        // checked={checklist.isImprovementPoint}
-                                                        // onChange={handleAddImprovement}
-                                                        className="w-4 h-4 rounded-sm border-2 accent-[#1e293b] cursor-pointer"
-                                                    />
-                                                    Need Improvement
-                                                </label>
-                                            </div>
+                                            <h3 className={`font-base text-xs ${disabledText}`}>Upload Sample</h3>
                                         </div>
                                     </div>
 
-                                    <div className={`space-y-2 ${(checklist.imageSample || checklist.evidences.length) ? "md:col-span-2" : ""}`}>
-                                        <h3 className={`font-medium text-[13.5px] ${disabledText}`}>Remarks:</h3>
-                                        <CustomTextarea
-                                            className={disabledBorder}
-                                            // disabled={checklist.disabled}
-                                            placeholder="Enter remarks..."
-                                        // value={remark}
-                                        // onChange={handleRemarkChange}
-                                        // onBlur={handleRemarkChangeDone}
-                                        />
+                                    <div className="px-2 w-1/2 md:w-1/2 lg:w-1/4 space-y-2">
+                                        <h3 className={`font-medium text-[13.5px] ${disabledText}`}>Evidence Count</h3>
+                                        <select className={`w-full h-14 px-3 py-2 rounded-sm text-xs focus:outline-none transition-all bg-white bg-gradient-to-br from-white to-slate-50 ${disabledBorder} ${disabledText}`}>
+                                            <option value="">Select</option>
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="px-2 w-1/2 md:w-1/2 lg:w-1/4 space-y-2">
+                                        <h3 className={`font-medium text-[13.5px] ${disabledText}`}>Evidence Type</h3>
+                                        <select className={`w-full h-14 px-3 py-2 rounded-sm text-xs focus:outline-none transition-all bg-white bg-gradient-to-br from-white to-slate-50 ${disabledBorder} ${disabledText}`}>
+                                            <option value="">Select</option>
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="px-2 w-1/2 md:w-1/2 lg:w-1/4 space-y-2">
+                                        <h3 className={`font-medium text-[13.5px] ${disabledText}`}>Evidence Mandatory:</h3>
+                                        <div className={`p-2 rounded-sm bg-gradient-to-br from-white to-slate-50 ${disabledBorder}`}>
+                                            <label className={`h-10 flex items-center gap-2 text-xs cursor-pointer transition-colors ${disabledText}`}>
+                                                <input
+                                                    type="checkbox"
+                                                    className="w-4 h-4 rounded-sm border-2 accent-[#1e293b] cursor-pointer"
+                                                />
+                                                *If Required
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <h3 className={`font-medium text-[13.5px] ${disabledText}`}>Score:</h3>
+                                        <div className="flex h-14">
+                                            {/* Select box taking most width */}
+                                            <div className="w-5/6">
+                                                <select
+                                                    className={`w-full h-full px-3 py-2 rounded-l-sm text-xs focus:outline-none transition-all bg-white bg-gradient-to-br from-white to-slate-50 ${disabledBorder} ${disabledText}`}
+                                                // value={checklist.recived}
+                                                // onChange={handleScoreChange}
+                                                // disabled={checklist.disabled}
+                                                >
+                                                    <option value="">Select</option>
+                                                    {checklist.options.map((opt, idx) => (
+                                                        <option key={`option_${checklist.id}_${idx}`} value={opt.value}>
+                                                            {opt.key}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+
+                                            {/* Edit button / input */}
+                                            <Button
+                                                size="custom"
+                                                className='rounded-none rounded-e-sm h-full px-3 text-sm'
+                                                onClick={() => handleSetChecklistScoring(idx)}
+                                            >
+                                                Edit
+                                            </Button>
+                                            {/* <div className="w-1/6 flex items-center justify-center bg-gray-100 rounded-sm cursor-pointer">
+                                                Edit
+                                            </div> */}
+                                        </div>
+                                    </div>
+                                </div>
+
 
                             </div>
                         )
@@ -457,8 +532,80 @@ const EvrFormCreation: React.FC = () => {
 
             ))
             }
+
+
+            {checklistScoring &&
+                (
+                    <Modal
+                        isVisible={true}
+                        size="lg"
+                        header={<ModalHeader
+                            title={`${checklistScoring.checklist.name} Scoring`}
+                            onClose={() => setChecklistScoring(null)}
+                        />}
+                    // footer={<button className="btn">Save</button>}
+                    // stickyFooter
+                    >
+                        <div className="w-full max-w-md mx-auto mt-8 relative">
+                            <div className="relative flex rounded-md overflow-hidden border border-gray-300 bg-gray-100 p-1">
+                                {/* Sliding active background */}
+                                <div
+                                    className={`absolute top-0 left-0 h-full w-1/2 bg-[#003366] rounded-sm shadow-lg
+        transform transition-all duration-300 ease-in-out
+        ${checklistScoring.checklist.optionsType === "bool" ? "translate-x-0" : "translate-x-full"}
+      `}
+                                />
+
+                                {/* Boolean button */}
+                                <button
+                                    onClick={() => setChecklistOptionsType(checklistScoring.checklistIdx, "bool")}
+                                    className={`flex-1 py-3 font-medium relative z-10 text-center
+        transition-colors duration-300 ease-in-out
+        ${checklistScoring.checklist.optionsType === "bool" ? "text-white" : "text-gray-600"}
+      `}
+                                >
+                                    Boolean
+                                </button>
+
+                                {/* Custom button */}
+                                <button
+                                    onClick={() => setChecklistOptionsType(checklistScoring.checklistIdx, "custom")}
+                                    className={`flex-1 py-3 font-medium relative z-10 text-center
+        transition-colors duration-300 ease-in-out
+        ${checklistScoring.checklist.optionsType === "custom" ? "text-white" : "text-gray-600"}
+      `}
+                                >
+                                    Custom
+                                </button>
+                            </div>
+                        </div>
+
+                    </Modal >)
+            }
+
         </Sidebar >
     );
 };
 
 export default EvrFormCreation;
+
+
+
+
+//     <div className="w-full">
+//     <div className="flex rounded-md overflow-hidden border border-gray-300 bg-gray-100 p-1">
+//         {/* Boolean button - active */}
+//     <button
+//         className="flex-1 py-3 bg-[#003366] text-white font-medium rounded-sm shadow-lg transform translate-y-0 hover:shadow-xl transition-all duration-200 z-10 relative"
+//     >
+//         Boolean
+//     </button>
+
+//     {/* Custom button - inactive */}
+//     <button
+//         className="flex-1 py-3 bg-gray-100 text-gray-400 font-medium transform translate-y-1 hover:bg-gray-100 hover:translate-y-0.5 transition-all duration-200"
+//     >
+//         Custom
+//     </button>
+// </div>
+// </div> 

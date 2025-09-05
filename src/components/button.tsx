@@ -5,7 +5,7 @@ import clsx from "clsx";
 type ButtonProps = {
     children: React.ReactNode;
     variant?: "primary" | "secondary" | "danger" | "ghost";
-    size?: "lg" | "md" | "sm" | "xs";
+    size?: "lg" | "md" | "sm" | "xs" | "custom";
     type?: "button" | "submit" | "reset";
     onClick?: () => void;
     disabled?: boolean;
@@ -38,6 +38,7 @@ export function Button({
         sm: "px-3 py-1.5 text-base",   // between md and xs
         xs: "px-3 py-2 text-sm",       // just slightly smaller than sm
         xxs: "px-2 py-1 text-xs",  // smallest but still usable
+        custom: "",
     };
 
     return (
