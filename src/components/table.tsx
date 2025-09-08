@@ -21,13 +21,15 @@ export const CustomTableWrapper: React.FC<CustomTableWrapperProp> = ({
         )}
     >
         {/* Title */}
-        <div
-            className="header-title-padding text-white bg-[#003366]"
-        >
-            <h1>
-                {title}
-            </h1>
-        </div>
+        {Boolean(title) && (
+            <div
+                className="header-title-padding text-white bg-[#003366]"
+            >
+                <h1>
+                    {title}
+                </h1>
+            </div>
+        )}
 
         {Boolean(headerContent) && headerContent}
 

@@ -32,7 +32,7 @@ export interface SidebarItem {
 // TABLE PROPS
 
 export interface CustomTableWrapperProp {
-    title: string;
+    title?: string;
     headerContent?: React.ReactNode;
     children: React.ReactNode;
     footerContent?: React.ReactNode;

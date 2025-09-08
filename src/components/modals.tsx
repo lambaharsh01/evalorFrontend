@@ -59,11 +59,11 @@ const Modal: React.FC<ModalProps> = ({
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm rounded-sm">
             <div
-                className={`bg-white thin-scrollbar shadow-lg w-11/12 ${sizeClasses[size]} relative max-h-[75vh] flex flex-col`}
+                className={`bg-white  thin-scrollbar shadow-lg w-11/12 ${sizeClasses[size]} relative max-h-[75vh] flex flex-col`}
             >
 
                 {header}
-                <div className="p-4 overflow-y-auto flex-1 thin-scrollbar">{children}</div>
+                <div className="bg-white p-4 overflow-y-auto flex-1 thin-scrollbar">{children}</div>
 
                 {/* Footer */}
                 {footer && (

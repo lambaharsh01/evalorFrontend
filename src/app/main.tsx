@@ -1,6 +1,7 @@
 // import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import '../style/index.css'
+
 import { BrowserRouter } from 'react-router-dom'
 import Router from './router.tsx'
 import { Toaster } from "sonner"

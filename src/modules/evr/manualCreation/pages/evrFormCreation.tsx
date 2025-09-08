@@ -5,10 +5,12 @@ import type { checklistOptions } from '@/components/evr/types';
 import Loading from '@/components/loading';
 import { CustomInput, CustomNumberInput, CustomTextarea } from '@/components/form';
 import { Button } from '@/components/button';
-import { ChevronDown, ChevronUp, Upload } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, Upload, X } from 'lucide-react';
 import Modal, { ModalHeader } from '@/components/modals';
-
-
+import { CustomTable, CustomTableWrapper, CustomTd, CustomTh, CustomThead, CustomTr } from '@/components/table';
+import { isNumber } from '@/packages/validators/regex';
+import { showSwitchWarning } from '@/components/alerts';
+import { toast } from 'sonner';
 
 export interface checklistCreation {
     id?: number
@@ -19,9 +21,9 @@ export interface checklistCreation {
     imageSample: null | string
     evidences: null | null[]
     evidenceMandate: true
-    evidenceType: string
+    evidenceType: null | string
     options: checklistOptions[]
-    optionsType: null | "bool" | "custom"
+    optionsType: "Boolean" | "Custom"
     expand: boolean,
     liveCapture: boolean,
 }
@@ -53,8 +55,8 @@ const EvrFormCreation: React.FC = () => {
         evidences: [null, null],
         evidenceMandate: true,
         evidenceType: "image/*",
-        options: [{ key: "No", value: 0 }, { key: "Yes", value: 5 }],
-        optionsType: null,
+        options: [],
+        optionsType: "Boolean",
 
 
         expand: false,
@@ -67,7 +69,7 @@ const EvrFormCreation: React.FC = () => {
 
 
     const ch1: checklistCreation = {
-        name: "Politeness & courtesy",
+        name: "MCA Options",
         total: 5,
         idealRequirement: `The service provider must demonstrate professional behavior, 
         maintain courtesy in all interactions, and ensure timely communication with stakeholders throughout the project lifecycle.`,
@@ -81,6 +83,7 @@ const EvrFormCreation: React.FC = () => {
         evidenceMandate: true,
         evidenceType: "image/*",
         options: [{ key: "No", value: 0 }, { key: "Yes", value: 5 }],
+        optionsType: "Custom",
 
 
         expand: false,
@@ -92,8 +95,6 @@ const EvrFormCreation: React.FC = () => {
         arr.push({ ...ch1 })
     }
 
-
-
     const evrTotal: number = 100
 
     const [parameters, setParameters] = useState<parameterCreation[]>([
@@ -103,6 +104,12 @@ const EvrFormCreation: React.FC = () => {
         { id: 0, name: 'WWWWWWWWWWWW FFFFFFFFFFF', total: 10, checklists: [{ ...ch1 }, { ...ch1 }] },
         { id: 0, name: 'VVVVVVVVVVVVV DDDDDDDDDD', total: 10, checklists: [] }
     ]);
+    const [activeParaIdx, setActiveParaIdx] = useState<number>(0)
+
+    const handleActiveParameterChange = (idx: number) => {
+        setActiveParaIdx(idx)
+    }
+
     const parameterTotal: number = parameters.reduce((prev, curr) => prev + curr.total, 0)
 
     const handleAddParameter = () => {
@@ -120,6 +127,7 @@ const EvrFormCreation: React.FC = () => {
     }
 
     const handleParameterTotalChange = (e: React.ChangeEvent<HTMLInputElement>, paraIdx: number) => {
+        if (!isNumber(e.target.value)) return
         setParameters(prev => {
             prev[paraIdx].total = Number(e.target.value)
             return [...prev]
@@ -134,10 +142,7 @@ const EvrFormCreation: React.FC = () => {
             return [...prev]
 
         })
-
     }
-
-    const activeParaIdx: number = 3
 
     const disabledBorder: string = "border border-slate-700"
     const disabledText: string = "text-slate-800"
@@ -158,6 +163,7 @@ const EvrFormCreation: React.FC = () => {
     }
 
     const handleChecklistTotalChange = (e: React.ChangeEvent<HTMLInputElement>, checklistIdx: number) => {
+        if (!isNumber(e.target.value)) return
         setParameters(prev => {
             prev[activeParaIdx].checklists[checklistIdx].total = Number(e.target.value)
             return [...prev]
@@ -173,12 +179,90 @@ const EvrFormCreation: React.FC = () => {
         setChecklistScoring(activeChecklistCreation)
     }
 
-    const setChecklistOptionsType = (checklistIdx: number, type: "bool" | "custom") => {
+    const setChecklistOptionsType = async (type: "Boolean" | "Custom") => {
+
+        const checklistIdx: number = checklistScoring?.checklistIdx ?? -1
+
+        if (checklistIdx < 0) return
+
+        if (parameters[activeParaIdx].checklists[checklistIdx].optionsType !== "Boolean"
+            && parameters[activeParaIdx].checklists[checklistIdx].options.length > 0
+        ) {
+
+            const confirmed: boolean = await showSwitchWarning()
+            if (!confirmed) return
+        }
+
         setParameters(prev => {
+
+            let options: checklistOptions[] = []
+
+            if (type === "Boolean") {
+                options = [{
+                    key: "Yes",
+                    value: prev[activeParaIdx].checklists[checklistIdx].total
+                },
+                {
+                    key: "No",
+                    value: 0
+                }]
+
+            }
             prev[activeParaIdx].checklists[checklistIdx].optionsType = type
+            prev[activeParaIdx].checklists[checklistIdx].options = options
+            return [...prev]
+        })
+    }
+
+
+
+    const handelChecklistScoringAddOption = () => {
+        const checklistIdx: number = checklistScoring?.checklistIdx ?? -1
+        if (checklistIdx < 0) return
+
+        setParameters(prev => {
+            prev[activeParaIdx].checklists[checklistIdx].options.push({ key: "", value: 0 })
+            return [...prev]
+        })
+    }
+
+
+    const handelChecklistScoringRemove = (idx: number) => {
+        const checklistIdx: number = checklistScoring?.checklistIdx ?? -1
+        if (checklistIdx < 0) return
+
+        setParameters(prev => {
+            prev[activeParaIdx].checklists[checklistIdx].options.splice(idx, 1)
+            return [...prev]
+        })
+    }
+
+    const handelChecklistScoringKeyChange = (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
+        const checklistIdx: number = checklistScoring?.checklistIdx ?? -1
+        if (checklistIdx < 0) return
+
+        setParameters(prev => {
+            prev[activeParaIdx].checklists[checklistIdx].options[idx].key = e.target.value
             return [...prev]
         })
 
+    }
+
+    const handelChecklistScoringValueChange = (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
+        const checklistIdx: number = checklistScoring?.checklistIdx ?? -1
+        if (checklistIdx < 0 || !isNumber(e.target.value)) return
+
+        const optionScore: number = Number(e.target.value)
+
+        if (optionScore > parameters[activeParaIdx].checklists[checklistIdx].total) {
+            toast.warning("Options value can not be more than checklist total score")
+            return
+        }
+
+        setParameters(prev => {
+            prev[activeParaIdx].checklists[checklistIdx].options[idx].value = optionScore
+            return [...prev]
+        })
     }
 
     if (loading) return <Loading />
@@ -221,41 +305,43 @@ const EvrFormCreation: React.FC = () => {
 
                     <Button
                         size="sm"
-                        className='rounded-sm'
+                        className='rounded-sm flex items-center'
                         onClick={handleAddParameter}
                     >
+                        <Plus className='me-1' size={21} />
                         Add Parameter
                     </Button>
 
                 </div>
             </div>
             <div className="w-full overflow-x-auto">
-
                 <div className="flex shadow-sm">
                     {parameters.map((parameter, idx) => {
                         const parameterChecklistTotal: number = parameter.checklists.reduce((prev, curr) => prev + curr.total, 0)
+
+                        const parameterStatusStyle = !parameterChecklistTotal ? { // IF CHECKLIST SCORE IS 0
+                            borderLeftColor: '#cbd5e1',
+                            backgroundColor: 'white',
+                        } : parameterChecklistTotal === parameter.total ? { // IF CHECKLIST SCORE MATCHED TOTAL
+                            backgroundColor: '#f8fffb',
+                            borderLeftColor: '#10b981',
+                        } : parameterChecklistTotal > parameter.total ? { // IF CHECKLIST SCORE IS MORE THAN TOTAL
+                            backgroundColor: '#fef2f2',
+                            borderLeftColor: '#ef4444',
+                        } : { // IS CHECKLIST SCORE IS NOT 0 BUT NOT EQUAL TO THE TOTAL (PENDING)
+                            backgroundColor: '#fffbeb',
+                            borderLeftColor: '#f59e0b',
+                        }
+                        const parameterActiveClass = activeParaIdx === idx ? {
+                            borderLeftColor: '#0ea5e9',   // sky-500
+                            backgroundColor: '#f7fcff',
+                        } : {}
+
                         return <div
                             key={`parameter_${idx}`}
-                            className="relative px-4 pt-6 pb-12 text-center text-black border-r border-gray-100 last:border-r-0 min-w-[190px] max-w-[220px] overflow-hidden"
-                            style={
-                                !parameterChecklistTotal ? { // IF CHECKLIST SCORE IS 0
-                                    borderLeftWidth: '4px',
-                                    borderLeftColor: '#cbd5e1',
-                                    backgroundColor: 'white',
-                                } : parameterChecklistTotal === parameter.total ? { // IF CHECKLIST SCORE MATCHED TOTAL
-                                    backgroundColor: '#f8fffb',
-                                    borderLeftWidth: '4px',
-                                    borderLeftColor: '#10b981',
-                                } : parameterChecklistTotal > parameter.total ? { // IF CHECKLIST SCORE IS MORE THAN TOTAL
-                                    backgroundColor: '#fef2f2',
-                                    borderLeftWidth: '4px',
-                                    borderLeftColor: '#ef4444',
-                                } : { // IS CHECKLIST SCORE IS NOT 0 BUT NOT EQUAL TO THE TOTAL (PENDING)
-                                    backgroundColor: '#fffbeb',
-                                    borderLeftWidth: '4px',
-                                    borderLeftColor: '#f59e0b',
-                                }
-                            }
+                            className="relative px-4 pt-6 pb-12 text-center text-black border-r border-gray-100 last:border-r-0 min-w-[190px] max-w-[220px] overflow-hidden cursor-pointer"
+                            style={{ ...parameterStatusStyle, borderLeftWidth: '4px', ...parameterActiveClass }}
+                            onClick={() => handleActiveParameterChange(idx)}
                         >
                             {/* Top text */}
                             < div className="text-[14px] mb-2 font-medium tracking-wide" >
@@ -302,39 +388,62 @@ const EvrFormCreation: React.FC = () => {
                 </div>
             </div >
 
-
-
             <div className='w-full flex justify-end py-4'>
                 <Button
                     size="xs"
-                    className='rounded-sm'
+                    className='rounded-sm flex items-center'
                     onClick={handleAddChecklist}
                 >
+                    <Plus className='me-1' size={18} />
                     Add Checklist
                 </Button>
             </div>
 
+            {parameters[activeParaIdx].checklists.map((checklist, idx) => {
 
+                const {
+                    name,
+                    total,
+                    idealRequirement,
+                    scoringCriterion,
+                    imageSample,
+                    evidences,
+                    evidenceType,
+                    options,
+                } = checklist
 
-            {parameters[activeParaIdx].checklists.map((checklist, idx) => (
-                <div
+                const maxOptions: number = Math.max(...options.map(item => item.value)) || 0
+
+                const notStarted: boolean = !name && !total && !idealRequirement
+                const isCompleted: boolean =
+                    Boolean(name) &&
+                    Boolean(total) &&
+                    Boolean(idealRequirement) &&
+                    (scoringCriterion === null || Boolean(scoringCriterion.length)) &&
+                    (imageSample === null || Boolean(imageSample)) &&
+                    (evidences === null || Boolean(evidences.length)) &&
+                    (evidences === null || Boolean(evidenceType)) &&
+                    Boolean(options.length) &&
+                    maxOptions === total;
+
+                const checklistStatusStyle = !notStarted ? { // IF CHECKLIST SCORE IS 0
+                    borderLeftColor: '#cbd5e1',
+                } : isCompleted ? { // IF CHECKLIST SCORE MATCHED TOTAL
+                    borderLeftColor: '#10b981',
+                } : maxOptions > total ? { // IF CHECKLIST SCORE IS MORE THAN TOTAL
+                    borderLeftColor: '#ef4444',
+                } : { // IS CHECKLIST SCORE IS NOT 0 BUT NOT EQUAL TO THE TOTAL (PENDING)
+                    borderLeftColor: '#f59e0b',
+                }
+
+                return (<div
                     className="bg-white rounded-sm border border-[#cbd5e1] text-xs shadow-md mb-2"
                     key={`checklist_${idx}`}
                 >
                     {/* Header */}
                     <div className="p-2 border-b border-[#cbd5e1] flex items-center justify-between cursor-pointer"
                         onClick={() => handleChecklistExpand(idx)}
-                        style={
-                            // checklist.completed ? {
-                            //     backgroundColor: '#f8fffb',
-                            //     borderLeftWidth: '4px',
-                            //     borderLeftColor: '#10b981',
-                            // } :
-                            {
-                                borderLeftWidth: '4px',
-                                borderLeftColor: '#cbd5e1',
-                            }
-                        }
+                        style={{ ...checklistStatusStyle, borderLeftWidth: '4px' }}
                     >
                         <div className="flex items-center gap-2 w-9/12 md:w-10/12 lg:w-11/12">
                             <h2 className={`text-[13.5px] ${disabledText}`}>{activeParaIdx + 1}.{idx + 1}</h2>
@@ -517,9 +626,7 @@ const EvrFormCreation: React.FC = () => {
                                             >
                                                 Edit
                                             </Button>
-                                            {/* <div className="w-1/6 flex items-center justify-center bg-gray-100 rounded-sm cursor-pointer">
-                                                Edit
-                                            </div> */}
+
                                         </div>
                                     </div>
                                 </div>
@@ -528,57 +635,121 @@ const EvrFormCreation: React.FC = () => {
                             </div>
                         )
                     }
-                </div>
-
-            ))
-            }
+                </div>)
+            })}
 
 
             {checklistScoring &&
                 (
                     <Modal
                         isVisible={true}
-                        size="lg"
+                        size="xl"
                         header={<ModalHeader
-                            title={`${checklistScoring.checklist.name} Scoring`}
+                            title={`${checklistScoring.checklist.name} Scoring, Total Score: ${checklistScoring.checklist.total}`}
                             onClose={() => setChecklistScoring(null)}
                         />}
                     // footer={<button className="btn">Save</button>}
                     // stickyFooter
                     >
-                        <div className="w-full max-w-md mx-auto mt-8 relative">
-                            <div className="relative flex rounded-md overflow-hidden border border-gray-300 bg-gray-100 p-1">
+
+                        <div className="w-full mx-auto relative border-green-900 p-2 ">
+                            <div className="relative flex rounded-md overflow-hidden bg-gray-100 p-1">
                                 {/* Sliding active background */}
                                 <div
                                     className={`absolute top-0 left-0 h-full w-1/2 bg-[#003366] rounded-sm shadow-lg
         transform transition-all duration-300 ease-in-out
-        ${checklistScoring.checklist.optionsType === "bool" ? "translate-x-0" : "translate-x-full"}
+        ${checklistScoring.checklist.optionsType === "Custom" ? "translate-x-0" : "translate-x-full"}
       `}
                                 />
 
-                                {/* Boolean button */}
+                                {/* Custom button */}
                                 <button
-                                    onClick={() => setChecklistOptionsType(checklistScoring.checklistIdx, "bool")}
+                                    onClick={() => setChecklistOptionsType("Custom")}
                                     className={`flex-1 py-3 font-medium relative z-10 text-center
         transition-colors duration-300 ease-in-out
-        ${checklistScoring.checklist.optionsType === "bool" ? "text-white" : "text-gray-600"}
+        ${checklistScoring.checklist.optionsType === "Custom" ? "text-white" : "text-gray-700"}
+      `}
+                                >
+                                    Custom
+                                </button>
+
+                                {/* Boolean button */}
+                                <button
+                                    onClick={() => setChecklistOptionsType("Boolean")}
+                                    className={`flex-1 py-3 font-medium relative z-10 text-center
+        transition-colors duration-300 ease-in-out
+        ${checklistScoring.checklist.optionsType === "Boolean" ? "text-white" : "text-gray-700"}
       `}
                                 >
                                     Boolean
                                 </button>
 
-                                {/* Custom button */}
-                                <button
-                                    onClick={() => setChecklistOptionsType(checklistScoring.checklistIdx, "custom")}
-                                    className={`flex-1 py-3 font-medium relative z-10 text-center
-        transition-colors duration-300 ease-in-out
-        ${checklistScoring.checklist.optionsType === "custom" ? "text-white" : "text-gray-600"}
-      `}
-                                >
-                                    Custom
-                                </button>
+
                             </div>
+
+
+                            <div className='w-full flex justify-end py-4'>
+                                <Button
+                                    size="xs"
+                                    className='rounded-sm'
+                                    onClick={handelChecklistScoringAddOption}
+                                >
+                                    Add Option
+                                </Button>
+                            </div>
+                            <div className="w-full mx-auto space-y-3 text-black">
+
+                                <CustomTableWrapper className='rounded-xs'>
+                                    <CustomTable className='border-none shadow-none'>
+
+                                        <CustomThead>
+                                            <tr>
+                                                <CustomTh partition={false}>Key</CustomTh>
+                                                <CustomTh partition={false}>Value</CustomTh>
+                                                <CustomTh partition={false} className="text-center">Action</CustomTh>
+                                            </tr>
+                                        </CustomThead>
+                                        <tbody>
+                                            {checklistScoring.checklist.options.map((option, idx) => (
+                                                <CustomTr key={idx} index={idx}>
+                                                    <CustomTd partition={false}>
+                                                        <CustomInput
+                                                            type="text"
+                                                            placeholder="Key"
+                                                            value={option.key}
+                                                            onChange={e => handelChecklistScoringKeyChange(e, idx)}
+                                                        />
+
+                                                    </CustomTd>
+                                                    <CustomTd partition={false}>
+                                                        <CustomNumberInput
+                                                            type="text"
+                                                            placeholder="Key"
+                                                            value={option.value}
+                                                            onChange={e => handelChecklistScoringValueChange(e, idx)}
+                                                        />
+                                                    </CustomTd>
+                                                    <CustomTd partition={false} className="text-center">
+                                                        <button
+                                                            onClick={() => handelChecklistScoringRemove(idx)}
+                                                            className="p-2 rounded-md hover:bg-red-100 text-red-600"
+                                                        >
+                                                            <X size={18} />
+                                                        </button>
+                                                    </CustomTd>
+                                                </CustomTr>
+                                            ))}
+                                        </tbody>
+                                    </CustomTable>
+                                </CustomTableWrapper>
+
+                            </div>
+
+                            {/*  */}
+
+
                         </div>
+
 
                     </Modal >)
             }
@@ -588,24 +759,3 @@ const EvrFormCreation: React.FC = () => {
 };
 
 export default EvrFormCreation;
-
-
-
-
-//     <div className="w-full">
-//     <div className="flex rounded-md overflow-hidden border border-gray-300 bg-gray-100 p-1">
-//         {/* Boolean button - active */}
-//     <button
-//         className="flex-1 py-3 bg-[#003366] text-white font-medium rounded-sm shadow-lg transform translate-y-0 hover:shadow-xl transition-all duration-200 z-10 relative"
-//     >
-//         Boolean
-//     </button>
-
-//     {/* Custom button - inactive */}
-//     <button
-//         className="flex-1 py-3 bg-gray-100 text-gray-400 font-medium transform translate-y-1 hover:bg-gray-100 hover:translate-y-0.5 transition-all duration-200"
-//     >
-//         Custom
-//     </button>
-// </div>
-// </div> 
