@@ -1,7 +1,10 @@
+export const imageFileType: string = "image/*"
+
 export const fileTypes:Record<string, string> = {
     "image/*":"Image",
     "image/jpeg": "Image",
     "image/png": "Image",
+    "image/webp":"Image",
 
     "application/pdf": "PDF Document",
     "application/msword": "Word Document (.doc)",

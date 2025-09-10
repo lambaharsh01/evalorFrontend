@@ -61,6 +61,7 @@ const ChecklistView: React.FC<checklistViewProp> = ({
 
         if (!ok) {
             toast.warning(`Please upload ${requiredFileType} file`);
+            return
         }
 
         setLoading(true)

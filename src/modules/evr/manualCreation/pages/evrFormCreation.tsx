@@ -1,5 +1,5 @@
 import Sidebar from '@/components/sidebar';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 import type { checklistOptions } from '@/components/evr/types';
 import Loading from '@/components/loading';
@@ -11,6 +11,7 @@ import { CustomTable, CustomTableWrapper, CustomTd, CustomTh, CustomThead, Custo
 import { isNumber } from '@/packages/validators/regex';
 import { showSwitchWarning } from '@/components/alerts';
 import { toast } from 'sonner';
+import { fileTypes, imageFileType, isAcceptableFileType } from '@/packages/utils/fileTypes';
 
 export interface checklistCreation {
     id?: number
@@ -19,15 +20,16 @@ export interface checklistCreation {
     idealRequirement: null | string
     scoringCriterion: null | string[]
     imageSample: null | string
+    imageSampleRawURI: null | string,
     evidenceUpload: boolean
-    evidences: null | null[]
-    evidenceMandate: true
+    evidenceMandate: boolean
+    evidenceCount: number
     evidenceType: null | string
     showControls: boolean
     options: checklistOptions[]
     optionsType: "Boolean" | "Custom"
     expand: boolean,
-    liveCapture: boolean,
+    evidenceLiveCapture: boolean,
 }
 
 export interface parameterCreation {
@@ -43,6 +45,11 @@ export interface checklistCreationScoring {
 }
 const EvrFormCreation: React.FC = () => {
 
+    const [loading] = useState<boolean>(false)
+    const refs = useRef<(HTMLInputElement | null)[]>([])
+
+    const allFileTypes: string[] = Object.keys(fileTypes)
+
     const emptyParameter: parameterCreation = {
         name: 'XYZ',
         total: 10,
@@ -53,21 +60,20 @@ const EvrFormCreation: React.FC = () => {
         total: 0,
         idealRequirement: "",
         scoringCriterion: null,
+
         imageSample: null,
+        imageSampleRawURI: null,
+
         evidenceUpload: false,
-        evidences: [null, null],
         evidenceMandate: true,
-        evidenceType: "image/*",
+        evidenceCount: 0,
+        evidenceType: null,
         showControls: false,
         options: [],
-        optionsType: "Boolean",
-
-
+        optionsType: "Custom",
         expand: false,
-        liveCapture: true,
+        evidenceLiveCapture: true,
     }
-
-    const [loading] = useState<boolean>(false)
 
     const [checklistScoring, setChecklistScoring] = useState<null | checklistCreationScoring>(null)
 
@@ -83,8 +89,9 @@ const EvrFormCreation: React.FC = () => {
             "Respectful behavior demonstrated during meetings and interactions",
         ],
         imageSample: "https://c7.alamy.com/comp/2XXE0DN/shoe-variety-for-sale-at-shopping-mall-shop-from-flat-angle-image-is-taken-at-zudio-shopping-mall-jodhpur-rajasthan-india-on-july-20-2024-2XXE0DN.jpg",
+        imageSampleRawURI: null,
         evidenceUpload: false,
-        evidences: [null, null, null],
+        evidenceCount: 0,
         evidenceMandate: true,
         evidenceType: "image/*",
         options: [{ key: "No", value: 0 }, { key: "Yes", value: 5 }],
@@ -94,7 +101,7 @@ const EvrFormCreation: React.FC = () => {
 
 
         expand: false,
-        liveCapture: true,
+        evidenceLiveCapture: true,
     }
 
     const arr = []
@@ -150,6 +157,33 @@ const EvrFormCreation: React.FC = () => {
         })
     }
 
+    const disabledBorder: string = "border border-slate-700"
+    const disabledText: string = "text-slate-800"
+
+    const handleChecklistExpand = (checklistIdx: number) => {
+
+        setParameters(prev => {
+            prev[activeParaIdx].checklists[checklistIdx].expand = !prev[activeParaIdx].checklists[checklistIdx].expand
+            return [...prev]
+        })
+    }
+
+    const handleChecklistChange = (e: React.ChangeEvent<HTMLInputElement>, checklistIdx: number) => {
+        setParameters(prev => {
+            prev[activeParaIdx].checklists[checklistIdx].name = e.target.value
+            return [...prev]
+        })
+    }
+
+    const handleChecklistTotalChange = (e: React.ChangeEvent<HTMLInputElement>, checklistIdx: number) => {
+        if (!isNumber(e.target.value)) return
+        setParameters(prev => {
+            prev[activeParaIdx].checklists[checklistIdx].total = Number(e.target.value)
+            return [...prev]
+        })
+    }
+
+
     const handleShowControls = (idx: number) => {
         setParameters(prev => {
             prev[activeParaIdx].checklists[idx].showControls = !prev[activeParaIdx].checklists[idx].showControls
@@ -198,53 +232,74 @@ const EvrFormCreation: React.FC = () => {
         })
     }
 
-    const handleRemoveScoringCriterion = (idx: number, elemIdx: number) => {
+    const handleRemoveScoringCriterion = (idx: number, idxx: number) => {
         setParameters(prev => {
             if (prev[activeParaIdx].checklists[idx].scoringCriterion) {
-                prev[activeParaIdx].checklists[idx].scoringCriterion.splice(elemIdx, 1)
+                prev[activeParaIdx].checklists[idx].scoringCriterion.splice(idxx, 1)
             }
             return [...prev]
         })
     }
 
-    const handleChangeScoringCriterion = (e: React.ChangeEvent<HTMLInputElement>, idx: number, elemIdx: number) => {
+    const handleChangeScoringCriterion = (e: React.ChangeEvent<HTMLInputElement>, idx: number, idxx: number) => {
         setParameters(prev => {
             if (prev[activeParaIdx].checklists[idx].scoringCriterion) {
-                prev[activeParaIdx].checklists[idx].scoringCriterion[elemIdx] = e.target.value
+                prev[activeParaIdx].checklists[idx].scoringCriterion[idxx] = e.target.value
             }
             return [...prev]
         })
+    }
+    const handleChangeSampleInputSrc = (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
 
+        const file = e.target.files?.[0];
+        if (file) {
+            const [ok, requiredFileType] = isAcceptableFileType(file.type, imageFileType)
+
+            if (!ok) {
+                toast.warning(`Please upload ${requiredFileType} file`);
+                return
+            }
+
+            const url = URL.createObjectURL(file);
+
+            // Save to checklist (depends on how you're managing state)
+            // Example if checklist is stateful:
+
+            setParameters(prev => {
+                prev[activeParaIdx].checklists[idx].imageSample = url
+                return [...prev]
+            })
+        }
     }
 
-    const disabledBorder: string = "border border-slate-700"
-    const disabledText: string = "text-slate-800"
-
-    const handleChecklistExpand = (checklistIdx: number) => {
-
+    const handleChecklistEvidenceCountChange = (e: React.ChangeEvent<HTMLSelectElement>, idx: number) => {
         setParameters(prev => {
-            prev[activeParaIdx].checklists[checklistIdx].expand = !prev[activeParaIdx].checklists[checklistIdx].expand
+            prev[activeParaIdx].checklists[idx].evidenceCount = Number(e.target.value)
             return [...prev]
         })
     }
 
-    const handleChecklistChange = (e: React.ChangeEvent<HTMLInputElement>, checklistIdx: number) => {
+    const handleChecklistEvidenceTypeChange = (e: React.ChangeEvent<HTMLSelectElement>, idx: number) => {
         setParameters(prev => {
-            prev[activeParaIdx].checklists[checklistIdx].name = e.target.value
+            prev[activeParaIdx].checklists[idx].evidenceType = e.target.value
             return [...prev]
         })
     }
 
-    const handleChecklistTotalChange = (e: React.ChangeEvent<HTMLInputElement>, checklistIdx: number) => {
-        if (!isNumber(e.target.value)) return
+    const handleChecklistEvidenceMandateChange = (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
         setParameters(prev => {
-            prev[activeParaIdx].checklists[checklistIdx].total = Number(e.target.value)
+            prev[activeParaIdx].checklists[idx].evidenceMandate = e.target.checked
+            return [...prev]
+        })
+    }
+    const handleChecklistEvidenceLiveCaptureChange = (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
+        setParameters(prev => {
+            prev[activeParaIdx].checklists[idx].evidenceLiveCapture = e.target.checked
             return [...prev]
         })
     }
 
     const handleSetChecklistScoring = (checklistIdx: number) => {
-
         const activeChecklistCreation: checklistCreationScoring = {
             checklistIdx: checklistIdx,
             checklist: parameters[activeParaIdx].checklists[checklistIdx]
@@ -338,6 +393,46 @@ const EvrFormCreation: React.FC = () => {
         })
     }
 
+    // VALIDATION
+
+
+    const checklistValidation = ({
+        name,
+        total,
+        idealRequirement,
+        scoringCriterion,
+        imageSample,
+        evidenceUpload,
+        evidenceCount,
+        evidenceType,
+        options }: checklistCreation): {
+            notStarted: boolean,
+            isCompleted: boolean,
+            maxOptions: number,
+            total: number
+        } => {
+
+        const maxOptions: number = Math.max(...options.map(item => item.value)) || 0
+
+        const notStarted: boolean = !name && !total && !idealRequirement
+
+        const isCompleted: boolean =
+            Boolean(name) &&
+            Boolean(total) &&
+            Boolean(idealRequirement) &&
+            (scoringCriterion === null || !scoringCriterion.includes("")) &&
+            (imageSample === null || Boolean(imageSample)) &&
+            (!evidenceUpload || Boolean(evidenceCount)) &&
+            (!evidenceUpload || Boolean(evidenceType)) &&
+            Boolean(options.length) &&
+            maxOptions === total;
+
+        return { notStarted, isCompleted, maxOptions, total }
+
+    }
+
+    // VALIDATION
+
     if (loading) return <Loading />
 
     return (
@@ -398,14 +493,14 @@ const EvrFormCreation: React.FC = () => {
                         } : parameterChecklistTotal === parameter.total ? { // IF CHECKLIST SCORE MATCHED TOTAL
                             backgroundColor: '#f8fffb',
                             borderLeftColor: '#10b981',
-                        } : parameterChecklistTotal > parameter.total ? { // IF CHECKLIST SCORE IS MORE THAN TOTAL
-                            backgroundColor: '#fef2f2',
-                            borderLeftColor: '#ef4444',
                         } : { // IS CHECKLIST SCORE IS NOT 0 BUT NOT EQUAL TO THE TOTAL (PENDING)
                             backgroundColor: '#fffbeb',
                             borderLeftColor: '#f59e0b',
                         }
-                        const parameterActiveClass = activeParaIdx === idx ? {
+                        const parameterActiveClass = parameterChecklistTotal > parameter.total ? { // IF CHECKLIST SCORE IS MORE THAN TOTAL
+                            backgroundColor: '#fef2f2',
+                            borderLeftColor: '#ef4444',
+                        } : activeParaIdx === idx ? {
                             borderLeftColor: '#0ea5e9',   // sky-500
                             backgroundColor: '#f7fcff',
                         } : {}
@@ -474,31 +569,8 @@ const EvrFormCreation: React.FC = () => {
 
             {parameters[activeParaIdx].checklists.map((checklist, idx) => {
 
-                const {
-                    name,
-                    total,
-                    idealRequirement,
-                    scoringCriterion,
-                    imageSample,
-                    evidences,
-                    evidenceType,
-                    options,
-                } = checklist
+                const { notStarted, isCompleted, maxOptions, total } = checklistValidation(checklist)
 
-                const maxOptions: number = Math.max(...options.map(item => item.value)) || 0
-
-                const notStarted: boolean = !name && !total && !idealRequirement
-
-                const isCompleted: boolean =
-                    Boolean(name) &&
-                    Boolean(total) &&
-                    Boolean(idealRequirement) &&
-                    (scoringCriterion === null || Boolean(scoringCriterion.length)) &&
-                    (imageSample === null || Boolean(imageSample)) &&
-                    (evidences === null || Boolean(evidences.length)) &&
-                    (evidences === null || Boolean(evidenceType)) &&
-                    Boolean(options.length) &&
-                    maxOptions === total;
 
                 const checklistStatusStyle = notStarted ? { // IF CHECKLIST SCORE IS 0
                     borderLeftColor: '#cbd5e1',
@@ -647,16 +719,16 @@ const EvrFormCreation: React.FC = () => {
                                             <div className={`rounded-sm p-3 text-xs overflow-y-auto flex-1 leading-relaxed bg-gradient-to-br from-slate-50 to-slate-100 text-slate-600 border border-[#cbd5e1]`}>
 
                                                 <ul className="pl-0 space-y-2 w-full">
-                                                    {checklist.scoringCriterion?.map((c, i) => (
+                                                    {checklist.scoringCriterion?.map((sc, idxx) => (
                                                         <li
-                                                            key={i}
+                                                            key={`sc_${idx}_${idxx}`}
                                                             className="w-full bg-gradient-to-br from-slate-50 to-slate-100 rounded grid grid-cols-[auto_1fr] items-center gap-2"
                                                         >
                                                             {/* Cross button */}
                                                             <button
                                                                 type="button"
                                                                 className="text-gray-500 hover:text-red-500 text-lg font-bold cursor-pointer"
-                                                                onClick={() => handleRemoveScoringCriterion(idx, i)}
+                                                                onClick={() => handleRemoveScoringCriterion(idx, idxx)}
                                                             >
                                                                 ×
                                                             </button>
@@ -665,8 +737,8 @@ const EvrFormCreation: React.FC = () => {
                                                             <CustomInput
                                                                 type="text"
                                                                 className="w-full bg-white border border-slate-700 rounded-xs px-2 py-1 text-xs"
-                                                                value={c}
-                                                                onChange={(e) => handleChangeScoringCriterion(e, idx, i)}
+                                                                value={sc}
+                                                                onChange={(e) => handleChangeScoringCriterion(e, idx, idxx)}
                                                             />
                                                         </li>
                                                     ))}
@@ -682,19 +754,49 @@ const EvrFormCreation: React.FC = () => {
                                     {checklist.imageSample !== null && (
                                         <div className="px-2 w-1/2 md:w-1/2 lg:w-1/4 space-y-2 mb-2.5">
                                             <h3 className={`font-medium text-[13.5px] ${disabledText}`}>Sample Image</h3>
-                                            <div className={`flex justify-around p-2 rounded items-center gap-3 bg-gradient-to-br from-white to-slate-50 ${disabledBorder}`}>
-                                                <div className="w-10 h-10 border border-[#cbd5e1] rounded flex items-center justify-center text-xs text-slate-600 cursor-pointer transition-colors">
-                                                    <Upload className="w-4 h-4" />
-                                                </div>
-                                                <h3 className={`font-base text-xs ${disabledText}`}>Upload Sample</h3>
+                                            <div className={`p-2 rounded-sm bg-gradient-to-br from-white to-slate-50 ${disabledBorder}`}>
+                                                <label className={`h-10 flex items-center gap-2 text-xs cursor-pointer transition-colors ${disabledText}`}>
+
+                                                    <div className="w-10 h-10 border border-[#cbd5e1] rounded flex items-center justify-center text-xs text-slate-600 cursor-pointer transition-colors">
+                                                        {(!checklist.imageSample) ? (
+                                                            <Upload className="w-4 h-4" />
+                                                        ) : (<img
+                                                            className='w-full h-full rounded'
+                                                            src={checklist.imageSample || undefined}
+                                                        />)}
+                                                    </div>
+                                                    <input
+                                                        type="file"
+                                                        className='hidden'
+                                                        accept='image/*'
+                                                        ref={(ref) => { refs.current[idx] = ref }}
+                                                        onChange={e => handleChangeSampleInputSrc(e, idx)}
+
+                                                    />
+                                                    Upload Sample
+                                                </label>
                                             </div>
+
+
+
+                                            {/* 
+                                            <div className={`flex p-2 rounded items-center gap-3 bg-gradient-to-br from-white to-slate-50 ${disabledBorder}`}>
+
+                                           
+
+                                                <h3 className={`font-base text-xs ${disabledText}`}></h3>
+                                            </div> */}
                                         </div>
                                     )}
 
                                     {checklist.evidenceUpload && (
                                         <div className="px-2 w-1/2 md:w-1/2 lg:w-1/4 space-y-2 mb-2.5">
                                             <h3 className={`font-medium text-[13.5px] ${disabledText}`}>Evidence Count</h3>
-                                            <select className={`w-full h-14 px-3 py-2 rounded-sm text-xs focus:outline-none transition-all bg-white bg-gradient-to-br from-white to-slate-50 ${disabledBorder} ${disabledText}`}>
+                                            <select
+                                                className={`w-full h-14 px-3 py-2 rounded-sm text-xs focus:outline-none transition-all bg-white bg-gradient-to-br from-white to-slate-50 ${disabledBorder} ${disabledText}`}
+                                                value={checklist.evidenceCount || ""}
+                                                onChange={e => handleChecklistEvidenceCountChange(e, idx)}
+                                            >
                                                 <option value="">Select</option>
                                                 <option value="1">1</option>
                                                 <option value="2">2</option>
@@ -706,11 +808,15 @@ const EvrFormCreation: React.FC = () => {
                                     {checklist.evidenceUpload && (
                                         <div className="px-2 w-1/2 md:w-1/2 lg:w-1/4 space-y-2 mb-2.5">
                                             <h3 className={`font-medium text-[13.5px] ${disabledText}`}>Evidence Type</h3>
-                                            <select className={`w-full h-14 px-3 py-2 rounded-sm text-xs focus:outline-none transition-all bg-white bg-gradient-to-br from-white to-slate-50 ${disabledBorder} ${disabledText}`}>
+                                            <select
+                                                className={`w-full h-14 px-3 py-2 rounded-sm text-xs focus:outline-none transition-all bg-white bg-gradient-to-br from-white to-slate-50 ${disabledBorder} ${disabledText}`}
+                                                value={checklist.evidenceType || ""}
+                                                onChange={e => handleChecklistEvidenceTypeChange(e, idx)}
+                                            >
                                                 <option value="">Select</option>
-                                                <option value="1">1</option>
-                                                <option value="2">2</option>
-                                                <option value="3">3</option>
+                                                {allFileTypes.map((typ, idxx) => (
+                                                    <option value={typ} key={`fileType_${idx}_${idxx}`}>{typ}</option>
+                                                ))}
                                             </select>
                                         </div>
                                     )}
@@ -724,6 +830,8 @@ const EvrFormCreation: React.FC = () => {
                                                     <input
                                                         type="checkbox"
                                                         className="w-4 h-4 rounded-sm border-2 accent-[#1e293b] cursor-pointer"
+                                                        checked={checklist.evidenceMandate}
+                                                        onChange={e => handleChecklistEvidenceMandateChange(e, idx)}
                                                     />
                                                     *If Required
                                                 </label>
@@ -739,6 +847,8 @@ const EvrFormCreation: React.FC = () => {
                                                     <input
                                                         type="checkbox"
                                                         className="w-4 h-4 rounded-sm border-2 accent-[#1e293b] cursor-pointer"
+                                                        checked={checklist.evidenceLiveCapture}
+                                                        onChange={e => handleChecklistEvidenceLiveCaptureChange(e, idx)}
                                                     />
                                                     *Restrict Gallery Upload
                                                 </label>
@@ -755,7 +865,7 @@ const EvrFormCreation: React.FC = () => {
                                                 <select
                                                     className={`w-full h-full px-3 py-2 rounded-l-sm text-xs focus:outline-none transition-all bg-white bg-gradient-to-br from-white to-slate-50 ${disabledBorder} ${disabledText}`}
                                                 >
-                                                    <option value="">Select</option>
+                                                    <option value="">{checklist.optionsType} Select Options</option>
                                                     {checklist.options.map((opt, idx) => (
                                                         <option key={`option_${checklist.id}_${idx}`} value={opt.value}>
                                                             {opt.key}
