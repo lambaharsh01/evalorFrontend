@@ -30,7 +30,7 @@ export const ModalHeader: React.FC<ModalHeaderProps> = ({ title, onClose }) => {
             <h2 className="text-black">{title}</h2>
             <button
                 onClick={onClose}
-                className="text-gray-500 hover:text-gray-800 text-2xl font-bold leading-none"
+                className="text-gray-500 hover:text-gray-800 text-2xl font-bold leading-none cursor-pointer"
             >
                 &times;
             </button>
