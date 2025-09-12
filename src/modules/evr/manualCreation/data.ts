@@ -13,7 +13,8 @@ export const emptyChecklist: checklistCreation = {
     idealRequirement: "",
     scoringCriterion: null,
 
-    imageSample: null,
+    imageSample: "",
+    // imageSample: null,
     imageSampleRawURI: null,
 
     evidenceUpload: false,

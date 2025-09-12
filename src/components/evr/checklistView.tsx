@@ -5,6 +5,7 @@ import React, { useState, useRef } from "react"
 import { isAcceptableFileType, isImage } from "@/packages/utils/fileTypes"
 import { isMdOrMore } from "@/packages/utils/screen"
 import { toast } from "sonner"
+import { handleImageError } from "@/packages/errors/imageError"
 
 
 const ChecklistView: React.FC<checklistViewProp> = ({
@@ -159,6 +160,7 @@ const ChecklistView: React.FC<checklistViewProp> = ({
                                                 src={checklist.imageSample ?? ""}
                                                 loading="lazy"
                                                 alt="Sample image"
+                                                onError={handleImageError}
                                             />
                                         </div>
 

@@ -5,8 +5,8 @@ import type { checklistOptions } from '@/components/evr/types';
 import Loading from '@/components/loading';
 import { CustomInput, CustomNumberInput, CustomTextarea } from '@/components/form';
 import { Button } from '@/components/button';
-import { ChevronDown, ChevronUp, Plus, Upload, X, MoreHorizontal, Trash2 } from 'lucide-react';
-import Modal, { ModalHeader } from '@/components/modals';
+import { ChevronDown, ChevronUp, Plus, Upload, X, MoreHorizontal, Trash2, Pen } from 'lucide-react';
+import { Modal, ModalHeader, ModalImagePreview } from '@/components/modals';
 import { CustomTable, CustomTableWrapper, CustomTd, CustomTh, CustomThead, CustomTr } from '@/components/table';
 import { isNumber } from '@/packages/validators/regex';
 import { showSwitchWarningAlert, showChecklistDeleteWarningAlert, showParameterDeleteWarningAlert } from '@/components/alerts';
@@ -15,6 +15,7 @@ import { fileTypes, imageFileType, isAcceptableFileType } from '@/packages/utils
 import type { checklistCreation, parameterCreation } from '../types';
 import { emptyChecklist, emptyParameter } from '../data';
 import { checklistValidation } from '../validator';
+import { handleImageError } from '@/packages/errors/imageError';
 
 
 const EvrFormCreation: React.FC = () => {
@@ -747,15 +748,19 @@ const EvrFormCreation: React.FC = () => {
                                             <div className={`p-2 rounded-sm bg-gradient-to-br from-white to-slate-50 ${disabledBorder}`}>
 
                                                 <div className={`h-10 flex items-center gap-2 text-xs cursor-pointer transition-colors ${disabledText}`}>
-                                                    <div className="w-10 h-10 border border-[#cbd5e1] rounded flex items-center justify-center text-xs text-slate-600 cursor-pointer transition-colors">
+                                                    <div className="w-10 h-10 border border-[#cbd5e1] rounded text-xs text-slate-600 cursor-pointer transition-colors">
                                                         {(!checklist.imageSample) ? (
-                                                            <Upload className="w-4 h-4"
+                                                            <div
+                                                                className='h-full w-full flex items-center justify-center'
                                                                 onClick={() => refs.current[activeParaIdx][idx]?.click()}
-                                                            />
+                                                            >
+                                                                <Upload className="w-4 h-4" />
+                                                            </div>
                                                         ) : (<img
                                                             className='w-full h-full rounded'
                                                             onClick={() => setImgSampleChecklistIdx(idx)}
                                                             src={checklist.imageSample || undefined}
+                                                            onError={handleImageError}
                                                         />)}
                                                     </div>
 
@@ -896,7 +901,7 @@ const EvrFormCreation: React.FC = () => {
             {
                 (() => {
 
-                    if (!scoringChecklistIdx) return null
+                    if (scoringChecklistIdx === null) return null
 
                     const checklist: checklistCreation = parameters[activeParaIdx].checklists[scoringChecklistIdx]
 
@@ -1011,22 +1016,34 @@ const EvrFormCreation: React.FC = () => {
 
             {
                 (() => {
-                    if (!imgSampleChecklistIdx) return null
+                    if (imgSampleChecklistIdx === null) return null
 
                     const checklist = parameters[activeParaIdx].checklists[imgSampleChecklistIdx]
 
 
-                    return <Modal
+                    return <ModalImagePreview
                         isVisible={true}
-                        size="xl"
+                        size="md"
+                        src={checklist.imageSample || ""}
                         header={<ModalHeader
                             title={`${checklist.name} Sample Preview`}
                             onClose={() => setImgSampleChecklistIdx(null)}
                         />}
-                    >
-                        hello world
-
-                    </Modal >
+                        footer={
+                            <div
+                                className="p-3 border-t border-gray-200 sticky bottom-0 bg-white rounded-b-sm flex justify-end"
+                            >
+                                <Button
+                                    size="xs"
+                                    className='rounded-sm flex items-center'
+                                    onClick={() => refs.current[activeParaIdx][imgSampleChecklistIdx]?.click()}
+                                >
+                                    <Pen className='me-1' size={18} />
+                                    Change Sample Image
+                                </Button>
+                            </div>
+                        }
+                    />
                 })()
             }
 

@@ -167,6 +167,28 @@
   border-radius: inherit;
 }
 
+/* MEDIUM SCROLLBAR */
+.medium-scrollbar {
+  border-radius: inherit;
+}
+
+.medium-scrollbar::-webkit-scrollbar {
+  width: 8px;       /* slightly thicker */
+  height: 8px;      /* horizontal scrollbar */
+  cursor: pointer;  /* show pointer on hover */
+}
+
+.medium-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #003366;
+  border-radius: inherit;
+  cursor: pointer;  /* pointer on thumb */
+}
+
+.medium-scrollbar::-webkit-scrollbar-track {
+  background: #f7fafc;
+  border-radius: inherit;
+}
+
 
 /* SCROLL END*/
 
