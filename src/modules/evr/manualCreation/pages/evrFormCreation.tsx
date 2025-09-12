@@ -12,118 +12,36 @@ import { isNumber } from '@/packages/validators/regex';
 import { showSwitchWarningAlert, showChecklistDeleteWarningAlert, showParameterDeleteWarningAlert } from '@/components/alerts';
 import { toast } from 'sonner';
 import { fileTypes, imageFileType, isAcceptableFileType } from '@/packages/utils/fileTypes';
+import type { checklistCreation, parameterCreation } from '../types';
+import { emptyChecklist, emptyParameter } from '../data';
+import { checklistValidation } from '../validator';
 
-export interface checklistCreation {
-    id?: number
-    name: string
-    total: number;
-    idealRequirement: null | string
-    scoringCriterion: null | string[]
-    imageSample: null | string
-    imageSampleRawURI: null | string,
-    evidenceUpload: boolean
-    evidenceMandate: boolean
-    evidenceCount: number
-    evidenceType: null | string
-    showControls: boolean
-    options: checklistOptions[]
-    optionsType: "Boolean" | "Custom"
-    expand: boolean,
-    evidenceLiveCapture: boolean,
-}
-
-export interface parameterCreation {
-    id?: number;
-    name: string;
-    total: number;
-    showControls: boolean,
-    checklists: checklistCreation[],
-}
 
 const EvrFormCreation: React.FC = () => {
 
-    const [loading] = useState<boolean>(false)
-    const refs = useRef<(HTMLInputElement | null)[][]>([])
-
     const allFileTypes: string[] = Object.keys(fileTypes)
-
-    const emptyParameter: parameterCreation = {
-        name: "",
-        total: 0,
-        showControls: false,
-        checklists: []
-    }
-    const emptyChecklist: checklistCreation = {
-        name: "",
-        total: 0,
-        idealRequirement: "",
-        scoringCriterion: null,
-
-        imageSample: null,
-        imageSampleRawURI: null,
-
-        evidenceUpload: false,
-        evidenceMandate: true,
-        evidenceCount: 0,
-        evidenceType: null,
-        showControls: false,
-        options: [],
-        optionsType: "Custom",
-        expand: true,
-        evidenceLiveCapture: true,
-    }
-
-    const ch1: checklistCreation = {
-        name: "MCA Options",
-        total: 5,
-        idealRequirement: `The service provider must demonstrate professional behavior, 
-        maintain courtesy in all interactions, and ensure timely communication with stakeholders throughout the project lifecycle.`,
-        scoringCriterion: [
-            "Professional communication maintained in all project correspondence",
-            "Timely responses to queries and requests (within 24 hours)",
-            "Respectful behavior demonstrated during meetings and interactions",
-        ],
-        imageSample: "https://c7.alamy.com/comp/2XXE0DN/shoe-variety-for-sale-at-shopping-mall-shop-from-flat-angle-image-is-taken-at-zudio-shopping-mall-jodhpur-rajasthan-india-on-july-20-2024-2XXE0DN.jpg",
-        imageSampleRawURI: null,
-        evidenceUpload: false,
-        evidenceCount: 0,
-        evidenceMandate: true,
-        evidenceType: "image/*",
-        options: [{ key: "No", value: 0 }, { key: "Yes", value: 5 }],
-        optionsType: "Custom",
-
-        showControls: false,
-
-
-        expand: false,
-        evidenceLiveCapture: true,
-    }
-
-    const arr = []
-    for (let i = 0; i <= 10; i++) {
-        arr.push({ ...ch1 })
-    }
+    const refs = useRef<(HTMLInputElement | null)[][]>([])
+    const [loading] = useState<boolean>(false)
 
     const evrTotal: number = 100
-
-    const [parameters, setParameters] = useState<parameterCreation[]>([
-        { id: 0, name: 'XYZ', total: 10, showControls: false, checklists: [{ ...ch1 }] },
-        // { id: 0, name: 'AAAAAAAAAA BBBBBBBBB CCCCCCCCCC', total: 10, showControls: false, checklists: [] },
-        // { id: 0, name: 'SSSSSSSSSSS QQQQQQQQQ', total: 10, showControls: false, checklists: [] },
-        // { id: 0, name: 'WWWWWWWWWWWW FFFFFFFFFFF', total: 10, showControls: false, checklists: [{ ...ch1 }, { ...ch1 }] },
-        // { id: 0, name: 'VVVVVVVVVVVVV DDDDDDDDDD', total: 10, showControls: false, checklists: [] }
-    ]);
+    const [parameters, setParameters] = useState<parameterCreation[]>([]);
     const [activeParaIdx, setActiveParaIdx] = useState<number>(0)
     const [imgSampleChecklistIdx, setImgSampleChecklistIdx] = useState<null | number>(null)
     const [scoringChecklistIdx, setScoringChecklistIdx] = useState<null | number>(null)
-
-
 
     const handleActiveParameterChange = (idx: number) => {
         setActiveParaIdx(idx)
     }
 
-    const handleShowParameterControls = (idx: number): void => {
+    const handleShowParameterControls = (idx: number, force?: boolean): void => {
+
+        if (force !== undefined) {
+            setParameters(prev => {
+                prev[idx].showControls = force
+                return [...prev]
+            })
+            return
+        }
         setParameters(prev => {
             prev[idx].showControls = !prev[idx].showControls
             return [...prev]
@@ -230,8 +148,16 @@ const EvrFormCreation: React.FC = () => {
         })
     }
 
+    const handleShowChecklistControls = (idx: number, force?: boolean) => {
 
-    const handleShowChecklistControls = (idx: number) => {
+        if (force !== undefined) {
+            setParameters(prev => {
+                prev[activeParaIdx].checklists[idx].showControls = force
+                return [...prev]
+            })
+            return
+        }
+
         setParameters(prev => {
             prev[activeParaIdx].checklists[idx].showControls = !prev[activeParaIdx].checklists[idx].showControls
             return [...prev]
@@ -246,15 +172,12 @@ const EvrFormCreation: React.FC = () => {
 
             switch (option) {
                 case "scoringCriterion":
-
                     prev[activeParaIdx].checklists[idx].scoringCriterion = checked ? [""] : null
-
                     break
                 case "imageSample":
                     prev[activeParaIdx].checklists[idx].imageSample = checked ? "" : null
                     break
                 case "evidenceUpload":
-
                     prev[activeParaIdx].checklists[idx].evidenceUpload = checked
             }
 
@@ -416,7 +339,6 @@ const EvrFormCreation: React.FC = () => {
             prev[activeParaIdx].checklists[checklistIdx].options[idx].key = e.target.value
             return [...prev]
         })
-
     }
 
     const handelChecklistScoringValueChange = (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
@@ -435,46 +357,6 @@ const EvrFormCreation: React.FC = () => {
             return [...prev]
         })
     }
-
-    // VALIDATION
-
-
-    const checklistValidation = ({
-        name,
-        total,
-        idealRequirement,
-        scoringCriterion,
-        imageSample,
-        evidenceUpload,
-        evidenceCount,
-        evidenceType,
-        options }: checklistCreation): {
-            notStarted: boolean,
-            isCompleted: boolean,
-            maxOptions: number,
-            total: number
-        } => {
-
-        const maxOptions: number = Math.max(...options.map(item => item.value)) || 0
-
-        const notStarted: boolean = !name && !total && !idealRequirement
-
-        const isCompleted: boolean =
-            Boolean(name) &&
-            Boolean(total) &&
-            Boolean(idealRequirement) &&
-            (scoringCriterion === null || !scoringCriterion.includes("")) &&
-            (imageSample === null || Boolean(imageSample)) &&
-            (!evidenceUpload || Boolean(evidenceCount)) &&
-            (!evidenceUpload || Boolean(evidenceType)) &&
-            Boolean(options.length) &&
-            maxOptions === total;
-
-        return { notStarted, isCompleted, maxOptions, total }
-
-    }
-
-    // VALIDATION
 
     if (loading) return <Loading />
 
@@ -533,13 +415,14 @@ const EvrFormCreation: React.FC = () => {
                         const parameterStatusStyle = !parameterChecklistTotal ? { // IF CHECKLIST SCORE IS 0
                             borderLeftColor: '#cbd5e1',
                             backgroundColor: 'white',
-                        } : parameterChecklistTotal === parameter.total ? { // IF CHECKLIST SCORE MATCHED TOTAL
+                        } : parameterChecklistTotal === parameter.total && parameter.name ? { // IF CHECKLIST SCORE MATCHED TOTAL
                             backgroundColor: '#f8fffb',
                             borderLeftColor: '#10b981',
                         } : { // IS CHECKLIST SCORE IS NOT 0 BUT NOT EQUAL TO THE TOTAL (PENDING)
                             backgroundColor: '#fffbeb',
                             borderLeftColor: '#f59e0b',
                         }
+
                         const parameterActiveClass = parameterChecklistTotal > parameter.total ? { // IF CHECKLIST SCORE IS MORE THAN TOTAL
                             backgroundColor: '#fef2f2',
                             borderLeftColor: '#ef4444',
@@ -552,18 +435,24 @@ const EvrFormCreation: React.FC = () => {
                             key={`parameter_${idx}`}
                             className="relative px-4 pb-12 text-center text-black border-r border-gray-100 last:border-r-0 min-w-[190px] max-w-[220px] overflow-hidden cursor-pointer"
                             style={{ ...parameterStatusStyle, borderLeftWidth: '4px', ...parameterActiveClass }}
-                            onClick={() => handleActiveParameterChange(idx)}
+                            onClick={() => {
+                                handleActiveParameterChange(idx)
+                                handleShowParameterControls(idx, false)
+                            }}
                         >
 
-                            <div className='relative w-full flex justify-end mb-1'>
+                            <div className='relative w-full mb-1'>
 
-                                <MoreHorizontal
-                                    className='cursor-pointer'
-                                    onClick={e => {
-                                        e.stopPropagation()
-                                        handleShowParameterControls(idx)
-                                    }}
-                                />
+                                <div className='w-full flex justify-between items-center'>
+                                    <MoreHorizontal
+                                        className='cursor-pointer'
+                                        onClick={e => {
+                                            e.stopPropagation()
+                                            handleShowParameterControls(idx)
+                                        }}
+                                    />
+                                    <span className='text-xs font-semibold'>({parameters[idx].checklists.length})</span>
+                                </div>
 
                                 {parameter.showControls && (
                                     <div
@@ -671,6 +560,7 @@ const EvrFormCreation: React.FC = () => {
                 return (<div
                     className="bg-white rounded-sm border border-[#cbd5e1] text-xs shadow-md mb-2"
                     key={`checklist_${idx}`}
+                    onClick={() => handleShowChecklistControls(idx, false)}
                 >
                     {/* Header */}
                     <div className="p-2 border-b border-[#cbd5e1] flex items-center justify-between cursor-pointer"
@@ -722,10 +612,15 @@ const EvrFormCreation: React.FC = () => {
                                 <div className='relative w-full text-black -my-1 flex justify-end'>
                                     <MoreHorizontal
                                         className='cursor-pointer'
-                                        onClick={() => handleShowChecklistControls(idx)}
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            handleShowChecklistControls(idx)
+                                        }}
                                     />
                                     {checklist.showControls && (
-                                        <div className="absolute right-0 w-48 rounded-xs border bg-white shadow-lg p-3 z-50">
+                                        <div className="absolute right-0 w-48 rounded-xs border bg-white shadow-lg p-3 z-50"
+                                            onClick={e => e.stopPropagation()}
+                                        >
 
                                             <div className='w-full -mt-3 mb-2.5 flex justify-between items-center'>
                                                 <span className='font-bold mt-1'>Checklist Control</span>
@@ -850,13 +745,16 @@ const EvrFormCreation: React.FC = () => {
                                         <div className="px-2 w-1/2 md:w-1/2 lg:w-1/4 space-y-2 mb-2.5">
                                             <h3 className={`font-medium text-[13.5px] ${disabledText}`}>Sample Image</h3>
                                             <div className={`p-2 rounded-sm bg-gradient-to-br from-white to-slate-50 ${disabledBorder}`}>
-                                                <label className={`h-10 flex items-center gap-2 text-xs cursor-pointer transition-colors ${disabledText}`}>
 
+                                                <div className={`h-10 flex items-center gap-2 text-xs cursor-pointer transition-colors ${disabledText}`}>
                                                     <div className="w-10 h-10 border border-[#cbd5e1] rounded flex items-center justify-center text-xs text-slate-600 cursor-pointer transition-colors">
                                                         {(!checklist.imageSample) ? (
-                                                            <Upload className="w-4 h-4" />
+                                                            <Upload className="w-4 h-4"
+                                                                onClick={() => refs.current[activeParaIdx][idx]?.click()}
+                                                            />
                                                         ) : (<img
                                                             className='w-full h-full rounded'
+                                                            onClick={() => setImgSampleChecklistIdx(idx)}
                                                             src={checklist.imageSample || undefined}
                                                         />)}
                                                     </div>
@@ -875,7 +773,7 @@ const EvrFormCreation: React.FC = () => {
                                                     />
 
                                                     Upload Sample
-                                                </label>
+                                                </div>
                                             </div>
 
 
@@ -995,140 +893,142 @@ const EvrFormCreation: React.FC = () => {
             }) ?? null}
 
 
-            {(() => {
+            {
+                (() => {
 
-                if (!scoringChecklistIdx) return null
+                    if (!scoringChecklistIdx) return null
 
-                const checklist: checklistCreation = parameters[activeParaIdx].checklists[scoringChecklistIdx]
+                    const checklist: checklistCreation = parameters[activeParaIdx].checklists[scoringChecklistIdx]
 
-                return <Modal
-                    isVisible={true}
-                    size="xl"
-                    header={<ModalHeader
-                        title={`${checklist.name} Scoring, Total Score: ${checklist.total}`}
-                        onClose={() => setScoringChecklistIdx(null)}
-                    />}
-                // footer={<button className="btn">Save</button>}
-                // stickyFooter
-                >
+                    return <Modal
+                        isVisible={true}
+                        size="xl"
+                        header={<ModalHeader
+                            title={`${checklist.name} Scoring, Total Score: ${checklist.total}`}
+                            onClose={() => setScoringChecklistIdx(null)}
+                        />}
+                    // footer={<button className="btn">Save</button>}
+                    // stickyFooter
+                    >
 
-                    <div className="w-full mx-auto relative border-green-900 p-2 ">
-                        <div className="relative flex rounded-md overflow-hidden bg-gray-100 p-1">
-                            {/* Sliding active background */}
-                            <div
-                                className={`absolute top-0 left-0 h-full w-1/2 bg-[#003366] rounded-sm shadow-lg
+                        <div className="w-full mx-auto relative border-green-900 p-2 ">
+                            <div className="relative flex rounded-md overflow-hidden bg-gray-100 p-1">
+                                {/* Sliding active background */}
+                                <div
+                                    className={`absolute top-0 left-0 h-full w-1/2 bg-[#003366] rounded-sm shadow-lg
         transform transition-all duration-300 ease-in-out
         ${checklist.optionsType === "Custom" ? "translate-x-0" : "translate-x-full"}
       `}
-                            />
+                                />
 
-                            {/* Custom button */}
-                            <button
-                                onClick={() => setChecklistOptionsType("Custom")}
-                                className={`flex-1 py-3 font-medium relative z-10 text-center
+                                {/* Custom button */}
+                                <button
+                                    onClick={() => setChecklistOptionsType("Custom")}
+                                    className={`flex-1 py-3 font-medium relative z-10 text-center
         transition-colors duration-300 ease-in-out
         ${checklist.optionsType === "Custom" ? "text-white" : "text-gray-700"}
       `}
-                            >
-                                Custom
-                            </button>
+                                >
+                                    Custom
+                                </button>
 
-                            {/* Boolean button */}
-                            <button
-                                onClick={() => setChecklistOptionsType("Boolean")}
-                                className={`flex-1 py-3 font-medium relative z-10 text-center
+                                {/* Boolean button */}
+                                <button
+                                    onClick={() => setChecklistOptionsType("Boolean")}
+                                    className={`flex-1 py-3 font-medium relative z-10 text-center
         transition-colors duration-300 ease-in-out
         ${checklist.optionsType === "Boolean" ? "text-white" : "text-gray-700"}
       `}
-                            >
-                                Boolean
-                            </button>
+                                >
+                                    Boolean
+                                </button>
 
 
+                            </div>
+
+
+                            <div className='w-full flex justify-end py-4'>
+                                <Button
+                                    size="xs"
+                                    className='rounded-sm'
+                                    onClick={handelChecklistScoringAddOption}
+                                >
+                                    Add Option
+                                </Button>
+                            </div>
+                            <div className="w-full mx-auto space-y-3 text-black">
+
+                                <CustomTableWrapper className='rounded-xs'>
+                                    <CustomTable className='border-none shadow-none'>
+
+                                        <CustomThead>
+                                            <tr>
+                                                <CustomTh partition={false}>Key</CustomTh>
+                                                <CustomTh partition={false}>Value</CustomTh>
+                                                <CustomTh partition={false} className="text-center">Action</CustomTh>
+                                            </tr>
+                                        </CustomThead>
+                                        <tbody>
+                                            {checklist.options.map((option, idx) => (
+                                                <CustomTr key={idx} index={idx}>
+                                                    <CustomTd partition={false}>
+                                                        <CustomInput
+                                                            type="text"
+                                                            placeholder="Key"
+                                                            value={option.key}
+                                                            onChange={e => handelChecklistScoringKeyChange(e, idx)}
+                                                        />
+
+                                                    </CustomTd>
+                                                    <CustomTd partition={false}>
+                                                        <CustomNumberInput
+                                                            type="text"
+                                                            placeholder="Key"
+                                                            value={option.value}
+                                                            onChange={e => handelChecklistScoringValueChange(e, idx)}
+                                                        />
+                                                    </CustomTd>
+                                                    <CustomTd partition={false} className="text-center">
+                                                        <button
+                                                            onClick={() => handelChecklistScoringRemove(idx)}
+                                                            className="p-2 rounded-md hover:bg-red-100 text-red-600"
+                                                        >
+                                                            <X size={18} />
+                                                        </button>
+                                                    </CustomTd>
+                                                </CustomTr>
+                                            ))}
+                                        </tbody>
+                                    </CustomTable>
+                                </CustomTableWrapper>
+
+                            </div>
                         </div>
+                    </Modal >
+                })()
+            }
 
 
-                        <div className='w-full flex justify-end py-4'>
-                            <Button
-                                size="xs"
-                                className='rounded-sm'
-                                onClick={handelChecklistScoringAddOption}
-                            >
-                                Add Option
-                            </Button>
-                        </div>
-                        <div className="w-full mx-auto space-y-3 text-black">
+            {
+                (() => {
+                    if (!imgSampleChecklistIdx) return null
 
-                            <CustomTableWrapper className='rounded-xs'>
-                                <CustomTable className='border-none shadow-none'>
-
-                                    <CustomThead>
-                                        <tr>
-                                            <CustomTh partition={false}>Key</CustomTh>
-                                            <CustomTh partition={false}>Value</CustomTh>
-                                            <CustomTh partition={false} className="text-center">Action</CustomTh>
-                                        </tr>
-                                    </CustomThead>
-                                    <tbody>
-                                        {checklist.options.map((option, idx) => (
-                                            <CustomTr key={idx} index={idx}>
-                                                <CustomTd partition={false}>
-                                                    <CustomInput
-                                                        type="text"
-                                                        placeholder="Key"
-                                                        value={option.key}
-                                                        onChange={e => handelChecklistScoringKeyChange(e, idx)}
-                                                    />
-
-                                                </CustomTd>
-                                                <CustomTd partition={false}>
-                                                    <CustomNumberInput
-                                                        type="text"
-                                                        placeholder="Key"
-                                                        value={option.value}
-                                                        onChange={e => handelChecklistScoringValueChange(e, idx)}
-                                                    />
-                                                </CustomTd>
-                                                <CustomTd partition={false} className="text-center">
-                                                    <button
-                                                        onClick={() => handelChecklistScoringRemove(idx)}
-                                                        className="p-2 rounded-md hover:bg-red-100 text-red-600"
-                                                    >
-                                                        <X size={18} />
-                                                    </button>
-                                                </CustomTd>
-                                            </CustomTr>
-                                        ))}
-                                    </tbody>
-                                </CustomTable>
-                            </CustomTableWrapper>
-
-                        </div>
-                    </div>
-                </Modal >
-            })()}
+                    const checklist = parameters[activeParaIdx].checklists[imgSampleChecklistIdx]
 
 
-            {(() => {
-                if (!imgSampleChecklistIdx) return null
+                    return <Modal
+                        isVisible={true}
+                        size="xl"
+                        header={<ModalHeader
+                            title={`${checklist.name} Sample Preview`}
+                            onClose={() => setImgSampleChecklistIdx(null)}
+                        />}
+                    >
+                        hello world
 
-                const checklist = parameters[activeParaIdx].checklists[imgSampleChecklistIdx]
-
-
-                return <Modal
-                    isVisible={true}
-                    size="xl"
-                    header={<ModalHeader
-                        title={`${checklist.name} Sample Preview`}
-                        onClose={() => setImgSampleChecklistIdx(null)}
-                    />}
-                // footer={<button className="btn">Save</button>}
-                // stickyFooter
-                >
-                    hello world
-
-                </Modal >
-            })()}
+                    </Modal >
+                })()
+            }
 
         </Sidebar >
     );
