@@ -128,3 +128,29 @@ export interface CustomTextareaProps extends TextareaAutosizeProps {
 
 // FORM END
 
+
+
+// MODALS 
+
+export interface ModalProps {
+    isVisible: boolean;
+    children: React.ReactNode;
+    size?: "sm" | "md" | "lg" | "xl";
+    header: React.ReactNode;
+    footer?: React.ReactNode;
+}
+
+export interface ModalImagePreviewProps {
+    isVisible: boolean;
+    size?: "sm" | "md" | "lg" | "xl";
+    header: React.ReactNode;
+    footer?: React.ReactNode;
+    src: string,
+}
+
+export interface ModalHeaderProps {
+    title: string;
+    onClose: () => void;
+}
+
+// MODALS END

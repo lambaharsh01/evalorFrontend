@@ -2,27 +2,7 @@
 import { handleImageError } from "@/packages/errors/imageError";
 import { useEffect } from "react";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
-
-interface ModalProps {
-    isVisible: boolean;
-    children: React.ReactNode;
-    size?: "sm" | "md" | "lg" | "xl";
-    header: React.ReactNode;
-    footer?: React.ReactNode;
-}
-
-interface ModalImagePreviewProps {
-    isVisible: boolean;
-    size?: "sm" | "md" | "lg" | "xl";
-    header: React.ReactNode;
-    footer?: React.ReactNode;
-    src: string,
-}
-
-interface ModalHeaderProps {
-    title: string;
-    onClose: () => void;
-}
+import type { ModalHeaderProps, ModalImagePreviewProps, ModalProps } from "./types";
 
 export const ModalHeader: React.FC<ModalHeaderProps> = ({ title, onClose }) => {
     return (
