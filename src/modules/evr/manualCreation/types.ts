@@ -6,6 +6,7 @@ export interface checklistCreation {
     total: number;
     idealRequirement: null | string
     scoringCriterion: null | string[]
+    // imageSamplePointer?: string
     imageSample: null | string
     imageSampleRawURI: null | string,
     evidenceUpload: boolean

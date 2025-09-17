@@ -16,6 +16,7 @@ import type { checklistCreation, parameterCreation } from '../types';
 import { emptyChecklist, emptyParameter } from '../data';
 import { checklistValidation } from '../validator';
 import { handleImageError } from '@/packages/errors/imageError';
+import { compressToWebP } from '@/packages/utils/compressToWebP';
 
 
 const EvrFormCreation: React.FC = () => {
@@ -220,28 +221,50 @@ const EvrFormCreation: React.FC = () => {
             return [...prev]
         })
     }
-    const handleChangeSampleInputSrc = (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
 
-        const file = e.target.files?.[0];
-        if (file) {
-            const [ok, requiredFileType] = isAcceptableFileType(file.type, imageFileType)
+    const handleChangeSampleInputSrc = async (
+        e: React.ChangeEvent<HTMLInputElement>,
+        idx: number
+    ) => {
 
-            if (!ok) {
-                toast.warning(`Please upload ${requiredFileType} file`);
-                return
-            }
+        let file = e.target.files?.[0];
+
+        if (!file) return;
+
+        const [ok, requiredFileType] = isAcceptableFileType(file.type, imageFileType);
+
+        if (!ok) {
+            toast.warning(`Please upload ${requiredFileType} file`);
+            return;
+        }
+
+        console.log("Original file size (KB):", (file.size / 1024).toFixed(2));
+
+        try {
+            const compressedFile = await compressToWebP(file);
+
+            const dataTrans = new DataTransfer();
+            dataTrans.items.add(compressedFile);
+            e.target.files = dataTrans.files;
+            file = dataTrans.files[0];
+
+            console.log("Compressed file size (KB):", (file.size / 1024).toFixed(2));
 
             const url = URL.createObjectURL(file);
 
-            // Save to checklist (depends on how you're managing state)
-            // Example if checklist is stateful:
+            setParameters((prev) => {
+                prev[activeParaIdx].checklists[idx].imageSample = url;
+                return [...prev];
+            });
 
-            setParameters(prev => {
-                prev[activeParaIdx].checklists[idx].imageSample = url
-                return [...prev]
-            })
+        } catch (err) {
+            toast.error("Error processing image")
+            console.error("Compression failed:", err);
         }
-    }
+    };
+
+
+
 
     const handleChecklistEvidenceCountChange = (e: React.ChangeEvent<HTMLSelectElement>, idx: number) => {
         setParameters(prev => {
