@@ -5,25 +5,26 @@ import type { checklistOptions } from '@/components/evr/types';
 import Loading from '@/components/loading';
 import { CustomInput, CustomNumberInput, CustomTextarea } from '@/components/form';
 import { Button } from '@/components/button';
-import { ChevronDown, ChevronUp, Plus, Upload, X, MoreHorizontal, Trash2, Pen } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, Upload, X, MoreHorizontal, Trash2, Pen, Save } from 'lucide-react';
 import { Modal, ModalHeader, ModalImagePreview } from '@/components/modals';
 import { CustomTable, CustomTableWrapper, CustomTd, CustomTh, CustomThead, CustomTr } from '@/components/table';
 import { isNumber } from '@/packages/validators/regex';
 import { showSwitchWarningAlert, showChecklistDeleteWarningAlert, showParameterDeleteWarningAlert } from '@/components/alerts';
 import { toast } from 'sonner';
 import { fileTypes, imageFileType, isAcceptableFileType } from '@/packages/utils/fileTypes';
-import type { checklistCreation, parameterCreation } from '../types';
+import type { checklistCreation, parameterCreation, payloadParameter } from '../types';
 import { emptyChecklist, emptyParameter } from '../data';
 import { checklistValidation } from '../validator';
 import { handleImageError } from '@/packages/errors/imageError';
 import { compressToWebP } from '@/packages/utils/compressToWebP';
+import { reqInterceptor } from '@/packages/http/interceptor';
 
 
 const EvrFormCreation: React.FC = () => {
 
     const allFileTypes: string[] = Object.keys(fileTypes)
     const refs = useRef<(HTMLInputElement | null)[][]>([])
-    const [loading] = useState<boolean>(false)
+    const [loading, setLoading] = useState<boolean>(false)
 
     const evrTotal: number = 100
     const [parameters, setParameters] = useState<parameterCreation[]>([]);
@@ -67,8 +68,6 @@ const EvrFormCreation: React.FC = () => {
             setActiveParaIdx(idx - 1)
         }
     }
-
-
 
     const parameterTotal: number = parameters.reduce((prev, curr) => prev + curr.total, 0)
 
@@ -171,7 +170,6 @@ const EvrFormCreation: React.FC = () => {
         const checked: boolean = e.target.checked
 
         setParameters(prev => {
-
             switch (option) {
                 case "scoringCriterion":
                     prev[activeParaIdx].checklists[idx].scoringCriterion = checked ? [""] : null
@@ -182,10 +180,8 @@ const EvrFormCreation: React.FC = () => {
                 case "evidenceUpload":
                     prev[activeParaIdx].checklists[idx].evidenceUpload = checked
             }
-
             return [...prev]
         })
-
     }
 
     const handleAddScoringCriterion = (idx: number) => {
@@ -238,8 +234,6 @@ const EvrFormCreation: React.FC = () => {
             return;
         }
 
-        console.log("Original file size (KB):", (file.size / 1024).toFixed(2));
-
         try {
             const compressedFile = await compressToWebP(file);
 
@@ -248,12 +242,11 @@ const EvrFormCreation: React.FC = () => {
             e.target.files = dataTrans.files;
             file = dataTrans.files[0];
 
-            console.log("Compressed file size (KB):", (file.size / 1024).toFixed(2));
-
             const url = URL.createObjectURL(file);
 
             setParameters((prev) => {
                 prev[activeParaIdx].checklists[idx].imageSample = url;
+                prev[activeParaIdx].checklists[idx].imageFile = dataTrans.files[0];
                 return [...prev];
             });
 
@@ -262,9 +255,6 @@ const EvrFormCreation: React.FC = () => {
             console.error("Compression failed:", err);
         }
     };
-
-
-
 
     const handleChecklistEvidenceCountChange = (e: React.ChangeEvent<HTMLSelectElement>, idx: number) => {
         setParameters(prev => {
@@ -332,8 +322,6 @@ const EvrFormCreation: React.FC = () => {
         })
     }
 
-
-
     const handelChecklistScoringAddOption = () => {
         const checklistIdx: number = scoringChecklistIdx ?? -1
         if (checklistIdx < 0) return
@@ -343,7 +331,6 @@ const EvrFormCreation: React.FC = () => {
             return [...prev]
         })
     }
-
 
     const handelChecklistScoringRemove = (idx: number) => {
         const checklistIdx: number = scoringChecklistIdx ?? -1
@@ -382,10 +369,65 @@ const EvrFormCreation: React.FC = () => {
         })
     }
 
-    if (loading) return <Loading />
+    const handelSaveEVRForm = async () => {
 
+        const payload = new FormData()
+
+        // 1. CREATE PARAMETERS AND APPEND IMAGES
+        const payloadParameters: payloadParameter[] = parameters.map((parameter, i) => ({
+            name: parameter.name,
+            total: parameter.total,
+            checklists: parameter.checklists.map((checklist, j) => {
+
+                let imageSampleKey: null | string = ""
+
+                if (checklist.imageFile) {
+                    imageSampleKey = `checklist_${i}_${j}`
+                    payload.append(imageSampleKey, checklist.imageFile)
+                }
+
+                return {
+                    name: checklist.name,
+                    total: checklist.total,
+                    idealRequirement: checklist.idealRequirement,
+                    scoringCriterion: checklist.scoringCriterion,
+                    imageSampleKey,
+                    imageSamplePrevUrl: null,
+                    evidenceUpload: checklist.evidenceUpload,
+                    evidenceMandate: checklist.evidenceMandate,
+                    evidenceCount: checklist.evidenceCount,
+                    evidenceType: checklist.evidenceType,
+                    showControls: checklist.showControls,
+                    options: checklist.options,
+                    optionsType: checklist.optionsType,
+                    evidenceLiveCapture: checklist.evidenceLiveCapture
+                }
+            })
+        }))
+
+        // 2. APPEND EVR ID AND STRINGIFIED PARAMETERS
+        payload.append("evrId", "1")
+        payload.append("parameters", JSON.stringify(payloadParameters))
+
+        // TO BE PUT IN THE SERVICE
+        setLoading(true)
+        reqInterceptor({
+            method: "POST",
+            url: "/private/evr/manual/save-evr-manual-form",
+            data: payload,
+        }).then((res) => {
+            console.log(res)
+        }).catch((err) => {
+            console.error(err)
+        }).finally(() => {
+            setLoading(false)
+        })
+    }
     return (
         <Sidebar>
+
+            {loading && <Loading />}
+
             <div className='w-full flex justify-between text-black pt-3 pb-4'>
 
                 <div className="flex text-slate-500 text-base font-medium p-2 min-w-[190px] max-w-[220px]"
@@ -719,11 +761,26 @@ const EvrFormCreation: React.FC = () => {
                                             Ideal Requirement:
                                         </h3>
                                         <div
-                                            contentEditable={true} // Makes the div editable
-                                            className={`rounded-sm p-3 text-xs overflow-y-auto flex-1 leading-relaxed bg-gradient-to-br from-slate-50 to-slate-100 text-slate-600 border border-[#cbd5e1]`}
-                                            data-placeholder="Enter Ideal Requirement for the checklist.." // Optional, custom implementation needed for placeholder
-                                            onInput={(e) => handleIdealRequirementChange(idx, e.currentTarget.textContent)}
+                                            key={`input_${activeParaIdx}_${idx}`}
+                                            contentEditable={true}
+                                            className="rounded-sm p-3 text-xs flex-1 leading-relaxed bg-gradient-to-br from-slate-50 to-slate-100 text-slate-600 border border-slate-300 focus:border-slate-400 focus:outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400"
+                                            data-placeholder="Enter Ideal Requirement for the checklist.."
+                                            suppressContentEditableWarning={true}
+                                            onBlur={(e) => {
+                                                const content = e.currentTarget.textContent || "";
+                                                handleIdealRequirementChange(idx, content);
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && !e.shiftKey) {
+                                                    e.preventDefault();
+                                                    e.currentTarget.blur();
+                                                }
+                                            }}
+                                            dangerouslySetInnerHTML={{
+                                                __html: checklist.idealRequirement || ""
+                                            }}
                                         ></div>
+
                                     </div>
 
 
@@ -1070,7 +1127,18 @@ const EvrFormCreation: React.FC = () => {
                 })()
             }
 
+            {parameters.length > 0 && (
+                <Button
+                    size="sm"
+                    className='rounded-sm flex items-center'
+                    onClick={handelSaveEVRForm}
+                >
+                    <Save className='me-1' size={21} />
+                    Save From
+                </Button>
+            )}
         </Sidebar >
+
     );
 };
 

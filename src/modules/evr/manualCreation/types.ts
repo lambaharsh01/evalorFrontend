@@ -6,7 +6,7 @@ export interface checklistCreation {
     total: number;
     idealRequirement: null | string
     scoringCriterion: null | string[]
-    // imageSamplePointer?: string
+    imageFile?: File
     imageSample: null | string
     imageSampleRawURI: null | string,
     evidenceUpload: boolean
@@ -21,9 +21,31 @@ export interface checklistCreation {
 }
 
 export interface parameterCreation {
-    id?: number;
     name: string;
     total: number;
     showControls: boolean,
     checklists: checklistCreation[],
+}
+
+export interface payloadChecklist {
+    name: string
+    total: number
+    idealRequirement: null | string
+    scoringCriterion: null | string[]
+    imageSampleKey: null | string
+    imageSamplePrevUrl: null | string
+    evidenceUpload: boolean
+    evidenceMandate: boolean
+    evidenceCount: number
+    evidenceType: null | string
+    showControls: boolean
+    options: checklistOptions[]
+    optionsType: "Boolean" | "Custom"
+    evidenceLiveCapture: boolean
+}
+
+export interface payloadParameter {
+    name: string
+    total: number
+    checklists: payloadChecklist[]
 }

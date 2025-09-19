@@ -1,64 +1,54 @@
 import axios from "axios";
-
-import type  {
+import type {
   AxiosInstance,
   AxiosResponse,
   InternalAxiosRequestConfig,
-} from "axios"
+} from "axios";
 
-export const tokenFelidName:string = "accessToken"
+import type { reqInterceptorArguments } from "./types";
+import { convertQueryString } from "./formater";
 
-import type { jsonInterceptorArguments } from "./types";
+export const tokenFelidName: string = "accessToken";
 
-const isObject = (value: any): value is Record<string, any> =>
-  value !== null && typeof value === "object" && !Array.isArray(value);
+const axiosInstance: AxiosInstance = axios.create({
+  baseURL: "http://localhost:3051/api",
+});
 
-const convertQueryString = (object: string | number): string => {
-  if (!object || !isObject(object) || !Object.values(object).length) return "";
 
-  const queryParameters: string[] = [];
+axiosInstance.interceptors.request.use(
+  (req: InternalAxiosRequestConfig) => {
+    const token = localStorage.getItem(tokenFelidName);
 
-  for (const key in object) {
-    if (!object[key]) continue;
-    queryParameters.push(`${key}=${object[key]}`);
-  }
+    if (token) {
+      req.headers.Authorization = `Bearer ${token}`;
+    }
 
-  return queryParameters.length ? "?" + queryParameters.join("&") : "";
-};
+    if (req.data && !(req.data instanceof FormData)) {
+      req.headers["Content-Type"] = "application/json";
+    }
 
-export const jsonInterceptor = async({
+    return req;
+  },
+  (error: Error) => Promise.reject(error)
+);
+
+axiosInstance.interceptors.response.use(
+  (res: AxiosResponse) => res,
+  (error: Error) => Promise.reject(error)
+);
+
+export const reqInterceptor = async ({
   method,
   url,
   query,
   data,
-}: jsonInterceptorArguments): Promise<any> => {
+}: reqInterceptorArguments): Promise<any> => {
   try {
     if (!method) throw new Error("Method not provided");
     if (!url) throw new Error("Url not provided");
 
     const apiMethod = method.toLowerCase().trim();
-    
-    // let apiUrl = "http://10.91.94.92:9090/api";
-    let apiUrl = "https://pingfolio-backend.lambaharsh01.in/api";
-    // let apiUrl: string = "https://charter-backend.lambaharsh01.in/api";
-    
-    apiUrl += url.trim() + convertQueryString(query);
-
-    const axiosInstance: AxiosInstance = axios.create();
-
-    axiosInstance.interceptors.request.use(
-      (req: InternalAxiosRequestConfig) => {
-        const token = localStorage.getItem(tokenFelidName);
-        if (token) req.headers.Authorization = `Bearer ${token}`;
-        return req;
-      },
-      (error: Error) => Promise.reject(error)
-    );
-
-    axiosInstance.interceptors.response.use(
-      (res: AxiosResponse) => res,
-      (error: Error) => Promise.reject(error)
-    );
+    const apiUrl = url.trim() + convertQueryString(query);
 
     let response: AxiosResponse;
 
@@ -133,8 +123,8 @@ export const jsonInterceptor = async({
     }
 
     if (errorCode === 401 && !url.includes("/auth")) {
-      statusMessage = "Session Expired, Sign In Again"
-      
+      statusMessage = "Session Expired, Sign In Again";
+
       localStorage.removeItem(tokenFelidName);
       window.location.href = "/";
     }
@@ -144,4 +134,4 @@ export const jsonInterceptor = async({
 
     throw new Error(errorMessage);
   }
-}
+};
