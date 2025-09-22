@@ -26,7 +26,24 @@ export interface SidebarItem {
 }
 // SIDEBAR END
 
+// LOADER
 
+
+export interface SectionLoaderProps {
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
+  className?: string;
+  overlay?: boolean; // if true, covers the parent div
+}
+
+export type ImageWithLoaderProps = {
+  src: string | undefined;
+  alt?: string;
+  onClick?: () => void;
+  outerClass?:string;
+  imgClass?:string;
+};
+
+// LOADER END
 
 
 // TABLE PROPS
@@ -154,3 +171,4 @@ export interface ModalHeaderProps {
 }
 
 // MODALS END
+

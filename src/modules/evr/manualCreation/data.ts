@@ -1,4 +1,4 @@
-import type { checklistCreation, parameterCreation } from "./types"
+import type { checklistCreation, evrCreation, parameterCreation } from "./types"
 
 export const emptyParameter: parameterCreation = {
     name: "",
@@ -12,11 +12,8 @@ export const emptyChecklist: checklistCreation = {
     total: 0,
     idealRequirement: "",
     scoringCriterion: null,
-
     imageSample: null,
-    // imageSample: null,
-    imageSampleRawURI: null,
-
+    imageSamplePrevUrl:null,
     evidenceUpload: false,
     evidenceMandate: true,
     evidenceCount: 0,
@@ -26,4 +23,10 @@ export const emptyChecklist: checklistCreation = {
     optionsType: "Custom",
     expand: true,
     evidenceLiveCapture: true,
+}
+
+export const emptyEVR: evrCreation = {
+    id: 0,
+    total: 0,
+    parameters:[],
 }

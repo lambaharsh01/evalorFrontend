@@ -1,36 +1,41 @@
 import Sidebar from '@/components/sidebar';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 import type { checklistOptions } from '@/components/evr/types';
-import Loading from '@/components/loading';
+import Loading, { ImageWithLoader } from '@/components/loading';
 import { CustomInput, CustomNumberInput, CustomTextarea } from '@/components/form';
 import { Button } from '@/components/button';
-import { ChevronDown, ChevronUp, Plus, Upload, X, MoreHorizontal, Trash2, Pen, Save } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, Upload, X, MoreHorizontal, Trash2, Pen, Save, ChevronsUp, ChevronsDown } from 'lucide-react';
 import { Modal, ModalHeader, ModalImagePreview } from '@/components/modals';
 import { CustomTable, CustomTableWrapper, CustomTd, CustomTh, CustomThead, CustomTr } from '@/components/table';
 import { isNumber } from '@/packages/validators/regex';
 import { showSwitchWarningAlert, showChecklistDeleteWarningAlert, showParameterDeleteWarningAlert } from '@/components/alerts';
 import { toast } from 'sonner';
 import { fileTypes, imageFileType, isAcceptableFileType } from '@/packages/utils/fileTypes';
-import type { checklistCreation, parameterCreation, payloadParameter } from '../types';
-import { emptyChecklist, emptyParameter } from '../data';
+import type { checklistCreation, evrCreation, parameterCreation, payloadParameter } from '../types';
+import { emptyChecklist, emptyEVR, emptyParameter } from '../data';
 import { checklistValidation } from '../validator';
-import { handleImageError } from '@/packages/errors/imageError';
 import { compressToWebP } from '@/packages/utils/compressToWebP';
-import { reqInterceptor } from '@/packages/http/interceptor';
-
+import { GetEVRForm, SaveEvrForm } from '@/services/evr/manualCreation';
+import { useParams } from 'react-router-dom';
 
 const EvrFormCreation: React.FC = () => {
+
+    const { id } = useParams();
 
     const allFileTypes: string[] = Object.keys(fileTypes)
     const refs = useRef<(HTMLInputElement | null)[][]>([])
     const [loading, setLoading] = useState<boolean>(false)
 
-    const evrTotal: number = 100
+    const [evr, setEvr] = useState<evrCreation>(emptyEVR)
     const [parameters, setParameters] = useState<parameterCreation[]>([]);
     const [activeParaIdx, setActiveParaIdx] = useState<number>(0)
     const [imgSampleChecklistIdx, setImgSampleChecklistIdx] = useState<null | number>(null)
     const [scoringChecklistIdx, setScoringChecklistIdx] = useState<null | number>(null)
+
+    useEffect(() => {
+        handelFetchEVRForm()
+    }, [])
 
     const handleActiveParameterChange = (idx: number) => {
         setActiveParaIdx(idx)
@@ -95,7 +100,23 @@ const EvrFormCreation: React.FC = () => {
         })
     }
 
-    // CHECKLIST FUNC
+    const handleCollapseAll = () => {
+        setParameters(prev => {
+            for (const [idx] of prev[activeParaIdx].checklists.entries()) {
+                prev[activeParaIdx].checklists[idx].expand = false
+            }
+            return [...prev]
+        })
+    }
+
+    const handleExpandAll = () => {
+        setParameters(prev => {
+            for (const [idx] of prev[activeParaIdx].checklists.entries()) {
+                prev[activeParaIdx].checklists[idx].expand = true
+            }
+            return [...prev]
+        })
+    }
 
     const handleAddChecklist = () => {
         setParameters(prev => {
@@ -103,7 +124,6 @@ const EvrFormCreation: React.FC = () => {
             return [...prev]
         })
     }
-
 
     const handleChecklistDelete = async (idx: number) => {
 
@@ -369,9 +389,28 @@ const EvrFormCreation: React.FC = () => {
         })
     }
 
+    const handelFetchEVRForm = async () => {
+        const evrID: number = Number(id)
+
+        setLoading(true)
+
+        GetEVRForm(evrID).then(([data, err]) => {
+            if (err || !data) {
+                toast.error(err?.message ?? "Something went wrong")
+                return
+            }
+
+            setEvr(data)
+            setParameters(data.parameters)
+            setActiveParaIdx(0)
+        }).finally(() => {
+            setLoading(false)
+        })
+    }
+
     const handelSaveEVRForm = async () => {
 
-        const payload = new FormData()
+        const evrPayload = new FormData()
 
         // 1. CREATE PARAMETERS AND APPEND IMAGES
         const payloadParameters: payloadParameter[] = parameters.map((parameter, i) => ({
@@ -379,11 +418,11 @@ const EvrFormCreation: React.FC = () => {
             total: parameter.total,
             checklists: parameter.checklists.map((checklist, j) => {
 
-                let imageSampleKey: null | string = ""
+                let imageSampleKey: null | string = null
 
                 if (checklist.imageFile) {
                     imageSampleKey = `checklist_${i}_${j}`
-                    payload.append(imageSampleKey, checklist.imageFile)
+                    evrPayload.append(imageSampleKey, checklist.imageFile)
                 }
 
                 return {
@@ -392,7 +431,7 @@ const EvrFormCreation: React.FC = () => {
                     idealRequirement: checklist.idealRequirement,
                     scoringCriterion: checklist.scoringCriterion,
                     imageSampleKey,
-                    imageSamplePrevUrl: null,
+                    imageSamplePrevUrl: checklist.imageSamplePrevUrl,
                     evidenceUpload: checklist.evidenceUpload,
                     evidenceMandate: checklist.evidenceMandate,
                     evidenceCount: checklist.evidenceCount,
@@ -406,41 +445,96 @@ const EvrFormCreation: React.FC = () => {
         }))
 
         // 2. APPEND EVR ID AND STRINGIFIED PARAMETERS
-        payload.append("evrId", "1")
-        payload.append("parameters", JSON.stringify(payloadParameters))
+        evrPayload.append("id", evr.id.toString())
+        evrPayload.append("parametersRaw", JSON.stringify(payloadParameters))
 
         // TO BE PUT IN THE SERVICE
         setLoading(true)
-        reqInterceptor({
-            method: "POST",
-            url: "/private/evr/manual/save-evr-manual-form",
-            data: payload,
-        }).then((res) => {
-            console.log(res)
-        }).catch((err) => {
-            console.error(err)
+
+        SaveEvrForm(evrPayload).then(([msg, err]) => {
+            if (err) {
+                toast.error(err.message)
+                return
+            }
+            toast.success(msg)
         }).finally(() => {
             setLoading(false)
         })
     }
+
+    const formCompleted = (): boolean => {
+
+        if (!parameters.length) return false
+
+        let parametersTotal = 0
+        for (const { total, checklists } of parameters) {
+
+            if (!checklists.length) return false
+
+            let checklistsTotal = 0
+            for (const checklist of checklists) {
+                const { isCompleted } = checklistValidation(checklist)
+                if (!isCompleted) return false
+
+                checklistsTotal += checklist.total
+            }
+            if (checklistsTotal !== total) return false
+            parametersTotal += checklistsTotal
+        }
+
+        if (parametersTotal !== evr.total) return false
+        return true
+    }
+
+    if (loading) return <Loading />
+
     return (
         <Sidebar>
+            <div className="relative">
 
-            {loading && <Loading />}
+                {(evr.status == "Draft" && !evr.parametersCompleted && parameters.length > 0) && (
+                    <div
+                        className={`sticky top-0 bg-white shadow-md z-40 flex justify-center py-2 transition-transform duration-300`}
+                    >
+                        <Button
+                            size="xs"
+                            variant="secondary"
+                            className="rounded-sm flex items-center me-4"
+                            onClick={handelSaveEVRForm}
+                        >
+                            <Save className="me-1" size={18} />
+                            Save Form
+                        </Button>
+
+
+                        {formCompleted() && (
+                            <Button
+                                size="xs"
+                                className="rounded-sm flex items-center"
+                                onClick={handelSaveEVRForm}
+                            >
+                                <Save className="me-1" size={18} />
+                                Final Save
+                            </Button>
+                        )}
+                    </div>
+                )}
+
+            </div>
+
 
             <div className='w-full flex justify-between text-black pt-3 pb-4'>
-
                 <div className="flex text-slate-500 text-base font-medium p-2 min-w-[190px] max-w-[220px]"
                     style={
                         !parameterTotal ? { // IF PARAMETER SCORE IS 0
                             borderLeftWidth: '4px',
                             borderLeftColor: '#cbd5e1',
                             backgroundColor: 'white',
-                        } : parameterTotal === evrTotal ? { // IF PARAMETER SCORE MATCHED TOTAL
+                        } : parameterTotal === evr.total ? { // IF PARAMETER SCORE MATCHED TOTAL
                             backgroundColor: '#f8fffb',
                             borderLeftWidth: '4px',
                             borderLeftColor: '#10b981',
-                        } : parameterTotal > evrTotal ? { // IF PARAMETER SCORE IS MORE THAN TOTAL
+                        } : parameterTotal > evr.total ? { // IF PARAMETER SCORE IS MORE THAN TOTAL
                             backgroundColor: '#fef2f2',
                             borderLeftWidth: '4px',
                             borderLeftColor: '#ef4444',
@@ -450,29 +544,31 @@ const EvrFormCreation: React.FC = () => {
                             borderLeftColor: '#f59e0b',
                         }
                     }>
-                    <span className='me-4 font-bold'>EVR From</span>
+                    <span className='me-4 font-bold'>{evr.name}</span>
                     <span>
                         {parameterTotal}
                     </span>
                     <span className='mx-2'>/</span>
                     <span className='font-bold'>
-                        {evrTotal}
+                        {evr.total}
                     </span>
                 </div>
 
                 <div>
 
                     <Button
-                        size="sm"
+                        size="xs"
+                        variant='secondary'
                         className='rounded-sm flex items-center'
                         onClick={handleAddParameter}
                     >
                         <Plus className='me-1' size={21} />
-                        Add Parameter ( {parameters.length} )
+                        Add Parameter ({parameters.length})
                     </Button>
 
                 </div>
             </div>
+
             <div className="w-full overflow-x-auto">
                 <div className="flex shadow-sm">
                     {parameters.map((parameter, idx) => {
@@ -596,9 +692,33 @@ const EvrFormCreation: React.FC = () => {
 
             {Boolean(parameters[activeParaIdx]) && (
 
-                <div className='w-full flex justify-end py-4'>
+                <div className='w-full flex justify-between py-4'>
+
+                    <div className='flex'>
+                        <Button
+                            size="xs"
+                            variant='secondary'
+                            className='rounded-sm flex items-center me-2'
+                            onClick={handleCollapseAll}
+                        >
+                            <ChevronsUp size={18} />
+                        </Button>
+
+                        <Button
+                            size="xs"
+                            variant='secondary'
+                            className='rounded-sm flex items-center py-0'
+                            onClick={handleExpandAll}
+                        >
+                            <ChevronsDown size={18} />
+
+                        </Button>
+
+                    </div>
+
                     <Button
                         size="xs"
+                        variant='secondary'
                         className='rounded-sm flex items-center'
                         onClick={handleAddChecklist}
                     >
@@ -836,11 +956,9 @@ const EvrFormCreation: React.FC = () => {
                                                             >
                                                                 <Upload className="w-4 h-4" />
                                                             </div>
-                                                        ) : (<img
-                                                            className='w-full h-full rounded'
-                                                            onClick={() => setImgSampleChecklistIdx(idx)}
+                                                        ) : (<ImageWithLoader
                                                             src={checklist.imageSample || undefined}
-                                                            onError={handleImageError}
+                                                            onClick={() => setImgSampleChecklistIdx(idx)}
                                                         />)}
                                                     </div>
 
@@ -865,9 +983,6 @@ const EvrFormCreation: React.FC = () => {
 
                                             {/* 
                                             <div className={`flex p-2 rounded items-center gap-3 bg-gradient-to-br from-white to-slate-50 ${disabledBorder}`}>
-
-                                           
-
                                                 <h3 className={`font-base text-xs ${disabledText}`}></h3>
                                             </div> */}
                                         </div>
@@ -1126,17 +1241,6 @@ const EvrFormCreation: React.FC = () => {
                     />
                 })()
             }
-
-            {parameters.length > 0 && (
-                <Button
-                    size="sm"
-                    className='rounded-sm flex items-center'
-                    onClick={handelSaveEVRForm}
-                >
-                    <Save className='me-1' size={21} />
-                    Save From
-                </Button>
-            )}
         </Sidebar >
 
     );
