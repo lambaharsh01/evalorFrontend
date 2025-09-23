@@ -9,7 +9,7 @@ import { ChevronDown, ChevronUp, Plus, Upload, X, MoreHorizontal, Trash2, Pen, S
 import { Modal, ModalHeader, ModalImagePreview } from '@/components/modals';
 import { CustomTable, CustomTableWrapper, CustomTd, CustomTh, CustomThead, CustomTr } from '@/components/table';
 import { isNumber } from '@/packages/validators/regex';
-import { showSwitchWarningAlert, showChecklistDeleteWarningAlert, showParameterDeleteWarningAlert } from '@/components/alerts';
+import { showSwitchWarningAlert, showChecklistDeleteWarningAlert, showParameterDeleteWarningAlert, showFormCompletedConformationAlert } from '@/components/alerts';
 import { toast } from 'sonner';
 import { fileTypes, imageFileType, isAcceptableFileType } from '@/packages/utils/fileTypes';
 import type { checklistCreation, evrCreation, parameterCreation, payloadParameter } from '../types';
@@ -25,7 +25,8 @@ const EvrFormCreation: React.FC = () => {
 
     const allFileTypes: string[] = Object.keys(fileTypes)
     const refs = useRef<(HTMLInputElement | null)[][]>([])
-    const [loading, setLoading] = useState<boolean>(false)
+    const [loading, setLoading] = useState<boolean>(true)
+    const [disabled, setDisabled] = useState<boolean>(false)
 
     const [evr, setEvr] = useState<evrCreation>(emptyEVR)
     const [parameters, setParameters] = useState<parameterCreation[]>([]);
@@ -402,13 +403,19 @@ const EvrFormCreation: React.FC = () => {
 
             setEvr(data)
             setParameters(data.parameters)
+            setDisabled(evr.status !== "Draft" || evr.parametersCompleted)
             setActiveParaIdx(0)
         }).finally(() => {
             setLoading(false)
         })
     }
 
-    const handelSaveEVRForm = async () => {
+    const handelSaveEVRForm = async (status: 'Draft' | 'Completed') => {
+
+        if (status === "Completed") {
+            const confirmed = await showFormCompletedConformationAlert()
+            if (!confirmed) return
+        }
 
         const evrPayload = new FormData()
 
@@ -446,6 +453,7 @@ const EvrFormCreation: React.FC = () => {
 
         // 2. APPEND EVR ID AND STRINGIFIED PARAMETERS
         evrPayload.append("id", evr.id.toString())
+        evrPayload.append("status", status)
         evrPayload.append("parametersRaw", JSON.stringify(payloadParameters))
 
         // TO BE PUT IN THE SERVICE
@@ -454,11 +462,11 @@ const EvrFormCreation: React.FC = () => {
         SaveEvrForm(evrPayload).then(([msg, err]) => {
             if (err) {
                 toast.error(err.message)
+                setLoading(false)
                 return
             }
             toast.success(msg)
-        }).finally(() => {
-            setLoading(false)
+            handelFetchEVRForm()
         })
     }
 
@@ -500,7 +508,9 @@ const EvrFormCreation: React.FC = () => {
                             size="xs"
                             variant="secondary"
                             className="rounded-sm flex items-center me-4"
-                            onClick={handelSaveEVRForm}
+                            onClick={() => handelSaveEVRForm("Draft")}
+                            disabled={disabled}
+
                         >
                             <Save className="me-1" size={18} />
                             Save Form
@@ -511,7 +521,8 @@ const EvrFormCreation: React.FC = () => {
                             <Button
                                 size="xs"
                                 className="rounded-sm flex items-center"
-                                onClick={handelSaveEVRForm}
+                                onClick={() => handelSaveEVRForm("Completed")}
+                                disabled={disabled}
                             >
                                 <Save className="me-1" size={18} />
                                 Final Save
@@ -561,6 +572,7 @@ const EvrFormCreation: React.FC = () => {
                         variant='secondary'
                         className='rounded-sm flex items-center'
                         onClick={handleAddParameter}
+                        disabled={disabled}
                     >
                         <Plus className='me-1' size={21} />
                         Add Parameter ({parameters.length})
@@ -628,6 +640,7 @@ const EvrFormCreation: React.FC = () => {
                                                 type="button"
                                                 className="text-gray-500 hover:text-red-500 font-bold text-lg cursor-pointer"
                                                 onClick={() => handleShowParameterControls(idx)}
+                                                disabled={disabled}
                                             >
                                                 ×
                                             </button>
@@ -637,6 +650,7 @@ const EvrFormCreation: React.FC = () => {
                                             type="button"
                                             className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold rounded flex justify-center items-center gap-2 mt-2 py-2 cursor-pointer"
                                             onClick={() => handleDeleteParameter(idx)}
+                                            disabled={disabled}
                                         >
                                             <Trash2 size={14} />
                                             Delete Parameter
@@ -653,6 +667,7 @@ const EvrFormCreation: React.FC = () => {
                                     placeholder="Enter parameter..."
                                     value={parameter.name}
                                     onChange={e => handleParameterChange(e, idx)}
+                                    disabled={disabled}
                                 />
                             </div>
 
@@ -681,6 +696,7 @@ const EvrFormCreation: React.FC = () => {
                                             className='border border-slate-700 rounded-xs font-bold'
                                             value={parameter.total || ""}
                                             onChange={e => handleParameterTotalChange(e, idx)}
+                                            disabled={disabled}
                                         />
                                     </div>
                                 </div>
@@ -700,6 +716,7 @@ const EvrFormCreation: React.FC = () => {
                             variant='secondary'
                             className='rounded-sm flex items-center me-2'
                             onClick={handleCollapseAll}
+                            disabled={disabled}
                         >
                             <ChevronsUp size={18} />
                         </Button>
@@ -709,6 +726,7 @@ const EvrFormCreation: React.FC = () => {
                             variant='secondary'
                             className='rounded-sm flex items-center py-0'
                             onClick={handleExpandAll}
+                            disabled={disabled}
                         >
                             <ChevronsDown size={18} />
 
@@ -721,6 +739,7 @@ const EvrFormCreation: React.FC = () => {
                         variant='secondary'
                         className='rounded-sm flex items-center'
                         onClick={handleAddChecklist}
+                        disabled={disabled}
                     >
                         <Plus className='me-1' size={18} />
                         Add Checklist ({parameters[activeParaIdx].checklists.length})
@@ -764,6 +783,7 @@ const EvrFormCreation: React.FC = () => {
                                     className='w-full border border-slate-700 rounded-xs'
                                     value={checklist.name}
                                     onChange={(e) => handleChecklistChange(e, idx)}
+                                    disabled={disabled}
                                 />
                             </div>
                         </div>
@@ -780,6 +800,7 @@ const EvrFormCreation: React.FC = () => {
                                     className='border border-slate-700 rounded-xs font-medium'
                                     value={checklist.total || ""}
                                     onChange={(e) => handleChecklistTotalChange(e, idx)}
+                                    disabled={disabled}
                                 />
                             </div>
                             <div className={`flex items-center gap-1 px-2 py-1 ${disabledText}`}>
@@ -814,6 +835,7 @@ const EvrFormCreation: React.FC = () => {
                                                     type="button"
                                                     className="text-gray-500 hover:text-red-500 font-bold text-lg cursor-pointer"
                                                     onClick={() => handleShowChecklistControls(idx)}
+                                                    disabled={disabled}
                                                 >
                                                     ×
                                                 </button>
@@ -834,6 +856,7 @@ const EvrFormCreation: React.FC = () => {
                                                     type="button"
                                                     className="text-gray-500 hover:text-blue-500 text-lg font-bold cursor-pointer"
                                                     onClick={() => handleAddScoringCriterion(idx)}
+                                                    disabled={disabled}
                                                 >
                                                     +
                                                 </button>
@@ -861,6 +884,7 @@ const EvrFormCreation: React.FC = () => {
                                                 type="button"
                                                 className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold rounded flex justify-center items-center gap-2 mt-2 py-2 cursor-pointer"
                                                 onClick={() => handleChecklistDelete(idx)}
+                                                disabled={disabled}
                                             >
                                                 <Trash2 size={14} />
                                                 Delete Checklist
@@ -920,16 +944,17 @@ const EvrFormCreation: React.FC = () => {
                                                                 type="button"
                                                                 className="text-gray-500 hover:text-red-500 text-lg font-bold cursor-pointer"
                                                                 onClick={() => handleRemoveScoringCriterion(idx, idxx)}
+                                                                disabled={disabled}
                                                             >
                                                                 ×
                                                             </button>
 
-                                                            {/* CustomInput */}
                                                             <CustomInput
                                                                 type="text"
                                                                 className="w-full bg-white border border-slate-700 rounded-xs px-2 py-1 text-xs"
                                                                 value={sc}
                                                                 onChange={(e) => handleChangeScoringCriterion(e, idx, idxx)}
+                                                                disabled={disabled}
                                                             />
                                                         </li>
                                                     ))}
@@ -995,6 +1020,7 @@ const EvrFormCreation: React.FC = () => {
                                                 className={`w-full h-14 px-3 py-2 rounded-sm text-xs focus:outline-none transition-all bg-white bg-gradient-to-br from-white to-slate-50 ${disabledBorder} ${disabledText}`}
                                                 value={checklist.evidenceCount || ""}
                                                 onChange={e => handleChecklistEvidenceCountChange(e, idx)}
+                                                disabled={disabled}
                                             >
                                                 <option value="">Select</option>
                                                 <option value="1">1</option>
@@ -1011,6 +1037,7 @@ const EvrFormCreation: React.FC = () => {
                                                 className={`w-full h-14 px-3 py-2 rounded-sm text-xs focus:outline-none transition-all bg-white bg-gradient-to-br from-white to-slate-50 ${disabledBorder} ${disabledText}`}
                                                 value={checklist.evidenceType || ""}
                                                 onChange={e => handleChecklistEvidenceTypeChange(e, idx)}
+                                                disabled={disabled}
                                             >
                                                 <option value="">Select</option>
                                                 {allFileTypes.map((typ, idxx) => (
@@ -1077,6 +1104,7 @@ const EvrFormCreation: React.FC = () => {
                                                 size="custom"
                                                 className='rounded-none rounded-e-sm h-full px-3 text-sm'
                                                 onClick={() => handleSetChecklistScoring(idx)}
+                                                disabled={disabled}
                                             >
                                                 Edit
                                             </Button>
@@ -1107,8 +1135,6 @@ const EvrFormCreation: React.FC = () => {
                             title={`${checklist.name} Scoring, Total Score: ${checklist.total}`}
                             onClose={() => setScoringChecklistIdx(null)}
                         />}
-                    // footer={<button className="btn">Save</button>}
-                    // stickyFooter
                     >
 
                         <div className="w-full mx-auto relative border-green-900 p-2 ">
@@ -1128,6 +1154,7 @@ const EvrFormCreation: React.FC = () => {
         transition-colors duration-300 ease-in-out
         ${checklist.optionsType === "Custom" ? "text-white" : "text-gray-700"}
       `}
+                                    disabled={disabled}
                                 >
                                     Custom
                                 </button>
@@ -1139,6 +1166,7 @@ const EvrFormCreation: React.FC = () => {
         transition-colors duration-300 ease-in-out
         ${checklist.optionsType === "Boolean" ? "text-white" : "text-gray-700"}
       `}
+                                    disabled={disabled}
                                 >
                                     Boolean
                                 </button>
@@ -1152,6 +1180,7 @@ const EvrFormCreation: React.FC = () => {
                                     size="xs"
                                     className='rounded-sm'
                                     onClick={handelChecklistScoringAddOption}
+                                    disabled={disabled}
                                 >
                                     Add Option
                                 </Button>
@@ -1177,6 +1206,7 @@ const EvrFormCreation: React.FC = () => {
                                                             placeholder="Key"
                                                             value={option.key}
                                                             onChange={e => handelChecklistScoringKeyChange(e, idx)}
+                                                            disabled={disabled}
                                                         />
 
                                                     </CustomTd>
@@ -1186,12 +1216,14 @@ const EvrFormCreation: React.FC = () => {
                                                             placeholder="Key"
                                                             value={option.value}
                                                             onChange={e => handelChecklistScoringValueChange(e, idx)}
+                                                            disabled={disabled}
                                                         />
                                                     </CustomTd>
                                                     <CustomTd partition={false} className="text-center">
                                                         <button
                                                             onClick={() => handelChecklistScoringRemove(idx)}
                                                             className="p-2 rounded-md hover:bg-red-100 text-red-600"
+                                                            disabled={disabled}
                                                         >
                                                             <X size={18} />
                                                         </button>
@@ -1232,6 +1264,7 @@ const EvrFormCreation: React.FC = () => {
                                     size="xs"
                                     className='rounded-sm flex items-center'
                                     onClick={() => refs.current[activeParaIdx][imgSampleChecklistIdx]?.click()}
+                                    disabled={disabled}
                                 >
                                     <Pen className='me-1' size={18} />
                                     Change Sample Image
