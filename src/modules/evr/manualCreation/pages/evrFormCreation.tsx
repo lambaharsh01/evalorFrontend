@@ -18,6 +18,7 @@ import { checklistValidation } from '../validator';
 import { compressToWebP } from '@/packages/utils/compressToWebP';
 import { GetEVRForm, SaveEvrForm } from '@/services/evr/manualCreation';
 import { useParams } from 'react-router-dom';
+import clsx from 'clsx';
 
 const EvrFormCreation: React.FC = () => {
 
@@ -403,7 +404,7 @@ const EvrFormCreation: React.FC = () => {
 
             setEvr(data)
             setParameters(data.parameters)
-            setDisabled(evr.status !== "Draft" || evr.parametersCompleted)
+            setDisabled(data.status !== "Draft" || data.parametersCompleted)
             setActiveParaIdx(0)
         }).finally(() => {
             setLoading(false)
@@ -716,7 +717,6 @@ const EvrFormCreation: React.FC = () => {
                             variant='secondary'
                             className='rounded-sm flex items-center me-2'
                             onClick={handleCollapseAll}
-                            disabled={disabled}
                         >
                             <ChevronsUp size={18} />
                         </Button>
@@ -726,7 +726,6 @@ const EvrFormCreation: React.FC = () => {
                             variant='secondary'
                             className='rounded-sm flex items-center py-0'
                             onClick={handleExpandAll}
-                            disabled={disabled}
                         >
                             <ChevronsDown size={18} />
 
@@ -906,8 +905,12 @@ const EvrFormCreation: React.FC = () => {
                                         </h3>
                                         <div
                                             key={`input_${activeParaIdx}_${idx}`}
-                                            contentEditable={true}
-                                            className="rounded-sm p-3 text-xs flex-1 leading-relaxed bg-gradient-to-br from-slate-50 to-slate-100 text-slate-600 border border-slate-300 focus:border-slate-400 focus:outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400"
+                                            contentEditable={!disabled}
+                                            className={clsx(
+                                                "rounded-sm p-3 text-xs flex-1 leading-relaxed ",
+                                                !disabled && "bg-gradient-to-br from-slate-50 to-slate-100 text-slate-600 border border-slate-300 focus:border-slate-400 focus:outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400",
+                                                disabled && "bg-slate-50 text-slate-400 border border-slate-200 cursor-not-allowed",
+                                            )}
                                             data-placeholder="Enter Ideal Requirement for the checklist.."
                                             suppressContentEditableWarning={true}
                                             onBlur={(e) => {

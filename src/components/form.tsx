@@ -14,7 +14,8 @@ export const CustomInput: React.FC<CustomInputProps> = ({ label, className, ...p
                 "text-gray-900",
                 "border border-[#dce1e6] rounded-sm",
                 "focus:outline-none focus:border-[#003366]",
-                "placeholder-gray-400",
+                "placeholder-slate-400",
+                "disabled:bg-slate-50 disabled:text-slate-400 disabled:border-slate-200 disabled:cursor-not-allowed",
                 className
             )}
         />
@@ -35,8 +36,9 @@ export const CustomNumberInput: React.FC<CustomInputProps> = ({
             className={clsx(
                 "w-full text-gray-900 border border-[#dce1e6] rounded-sm",
                 "focus:outline-none focus:border-[#003366]",
-                "placeholder-gray-400 ",
+                "placeholder-slate-400 ",
                 "appearance-none",
+                "disabled:bg-slate-50 disabled:text-slate-400 disabled:border-slate-200 disabled:cursor-not-allowed",
                 className
             )}
             onWheel={(e) => (e.currentTarget as HTMLElement).blur()}
@@ -76,6 +78,7 @@ export const CustomTextarea: React.FC<CustomTextareaProps> = ({
         className={clsx(
             "w-full p-2 rounded-md text-xs leading-relaxed focus:outline-none  transition-all bg-gradient-to-br from-white to-slate-50 text-slate-800",
             "thin-scrollbar",
+            "disabled:bg-slate-50 disabled:text-slate-400 disabled:border-slate-200 disabled:cursor-not-allowed",
             className,
         )}
     />

@@ -1,10 +1,20 @@
 import { handleImageError } from "@/packages/errors/imageError";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ImageWithLoaderProps, SectionLoaderProps } from "./types";
 import clsx from "clsx";
 
 export const ImageWithLoader: React.FC<ImageWithLoaderProps> = ({ src, alt = "Sample Image", onClick, outerClass = "", imgClass = "" }) => {
   const [loading, setLoading] = useState(true);
+  const imgRef = useRef<HTMLImageElement | null>(null);
+
+  useEffect(() => {
+    const imgEl = imgRef.current;
+    if (!imgEl) return;
+
+    if (imgEl.complete && imgEl.naturalWidth !== 0) { // If image already cached → skip loader
+      setLoading(false);
+    }
+  }, [src]);
 
   return (
     <div className={clsx("relative w-full h-full", outerClass)}>
@@ -15,12 +25,13 @@ export const ImageWithLoader: React.FC<ImageWithLoaderProps> = ({ src, alt = "Sa
       )}
 
       <img
+        ref={imgRef}
         className={clsx(`w-full h-full rounded ${loading ? "opacity-0" : "opacity-100"} transition-opacity`, imgClass)}
         src={src}
         alt={alt}
         onClick={onClick}
         loading="lazy"
-        onLoad={() => setTimeout(() => setLoading(false), 100)} // Avoid re-render flicker: Sometimes images are cached and load instantly → the spinner briefly flashes.
+        onLoad={() => setLoading(false)} // Avoid re-render flicker: Sometimes images are cached and load instantly → the spinner briefly flashes.
         onError={(e) => {
           handleImageError(e)
           setLoading(false);

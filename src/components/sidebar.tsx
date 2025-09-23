@@ -146,9 +146,9 @@ const Sidebar: React.FC<SidebarProp> = ({ children, title }) => {
                 >
 
                     <div
-                        className="sidebar-navbar flex items-center justify-between ps-5 pe-3 border-b border-slate-200"
+                        className="sidebar-navbar flex items-center justify-between ps-5 pe-3 border-b border-slate-200 "
                         style={{
-                            background: "linear-gradient(to bottom right, #e5f0fa, #faf1f1, #eaf8f0)",
+                            background: "linear-gradient(to bottom right, #dce7f3, #edf0f7, #f3f1f4)",
                         }}
                     >
                         {/* Left Section */}
