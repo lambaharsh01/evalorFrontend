@@ -129,6 +129,14 @@
   color:#f8fffb;
 }
 
+.gray-bg {
+   @apply bg-gradient-to-br from-slate-50 to-slate-100
+}
+
+.gray-bg-input {
+   @apply bg-gradient-to-br from-slate-50 to-slate-100 text-slate-600 border border-slate-300 focus:border-slate-400
+}
+
 .sky-bg {
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
 }

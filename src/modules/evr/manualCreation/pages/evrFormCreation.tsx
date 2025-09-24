@@ -908,7 +908,7 @@ const EvrFormCreation: React.FC = () => {
                                             contentEditable={!disabled}
                                             className={clsx(
                                                 "rounded-sm p-3 text-xs flex-1 leading-relaxed ",
-                                                !disabled && "bg-gradient-to-br from-slate-50 to-slate-100 text-slate-600 border border-slate-300 focus:border-slate-400 focus:outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400",
+                                                !disabled && "gray-bg-input focus:outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400",
                                                 disabled && "bg-slate-50 text-slate-400 border border-slate-200 cursor-not-allowed",
                                             )}
                                             data-placeholder="Enter Ideal Requirement for the checklist.."
