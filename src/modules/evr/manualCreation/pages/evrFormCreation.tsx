@@ -1243,7 +1243,6 @@ const EvrFormCreation: React.FC = () => {
                 })()
             }
 
-
             {
                 (() => {
                     if (imgSampleChecklistIdx === null) return null

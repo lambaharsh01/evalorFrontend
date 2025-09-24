@@ -137,7 +137,6 @@ const Signin: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Submit Button */}
                         <div>
                             <button
                                 type="button"
@@ -164,7 +163,8 @@ const Signin: React.FC = () => {
 
                     {/* Help Links */}
                     <div className="mt-6 flex justify-center space-x-6">
-                        <a className="text-sm text-gray-600 hover:text-gray-900">
+                        <a className="text-sm text-blue-900 hover:text-blue-800 font-medium cursor-pointer"
+                            onClick={() => navigate("/password-reset")}>
                             Contact Support
                         </a>
                     </div>
