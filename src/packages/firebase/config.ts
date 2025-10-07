@@ -13,6 +13,7 @@ import { Capacitor } from "@capacitor/core";
 
 import type { firebaseConfigParameters, platform, tokenRequestResult } from "./types";
 import { requestWebToken } from "./platformToken";
+import { storageKeys } from "../utils/constants";
 
 const VAPID_KEY = "BFAH7N8ASi-DheZn5SaN9-JI2eV9bg52VBItfjwnZQwr0DZDwj9SXtqzVNRFXvTp97o3_x8SSBtCpdsdIo4KNEc" as const;
 const SERVICE_WORKER_PATH = "/firebase-messaging-sw.js" as const;
@@ -26,7 +27,6 @@ const firebaseConfig: firebaseConfigParameters = {
   appId: "1:299089530015:web:28dab13ea41e36f46466aa"
 } as const;
 
-// ✅ Always safe in Vite (pure client app)
 const app: FirebaseApp = initializeApp(firebaseConfig);
 
 let messaging: Messaging | null = null;
@@ -71,7 +71,7 @@ export const getFCMToken = async (registration: ServiceWorkerRegistration): Prom
       console.warn("No FCM token received.");
       return null;
     }
-    console.log("Web FCM Token:", token);
+    console.log("Web FCM Token Generated");
     return token;
   } catch (error) {
     console.error("Failed to get FCM token:", error);
@@ -102,16 +102,16 @@ export const setupMessageListener = (callback: (payload: MessagePayload) => void
 };
 
 export const findCreateUID = (): string => {
-  let uid = localStorage.getItem("clientDeviceUID");
+  let uid = localStorage.getItem(storageKeys.deviceUID);
   if (!uid) {
     uid = uuidv4();
-    localStorage.setItem("clientDeviceUID", uid);
+    localStorage.setItem(storageKeys.deviceUID, uid);
   }
   return uid;
 };
 
 const findCreateFmcToken = async (): Promise<string | null> => {
-  let fmcToken: string | null = localStorage.getItem("fcmToken");
+  let fmcToken: string | null = localStorage.getItem(storageKeys.fcmToken);
   if (!fmcToken) {
     try {
       const result = await requestFcmToken();

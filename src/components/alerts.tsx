@@ -5,6 +5,25 @@ import withReactContent from "sweetalert2-react-content";
 const SwalAlert = withReactContent(Swal);
 
 
+export const showLogoutWarningAlert = async (): Promise<boolean> => {
+    const result = await SwalAlert.fire({
+        title: <strong className="text-md">Confirm Logout?</strong>,
+        html: (
+            <p className="text-sm">
+                Are you sure you want to <b>Logout</b>.
+            </p>
+        ),
+        showCancelButton: true,
+        confirmButtonText: "Yes, Logout",
+        cancelButtonText: "Cancel",
+        confirmButtonColor: "#ef4444",
+        cancelButtonColor: "#6c757d",
+    });
+
+    return result.isConfirmed;
+};
+
+
 export const showSwitchWarningAlert = async (): Promise<boolean> => {
     const result = await SwalAlert.fire({
         title: <strong className="text-md">Are you sure?</strong>,

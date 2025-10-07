@@ -1,24 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Mail, Phone, Eye, EyeOff, Check, Info } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, Eye, EyeOff, Info, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-
-interface ContactOption {
-    id: string;
-    type: 'email' | 'sms';
-    value: string;
-    masked: string;
-    icon: React.ReactNode;
-}
-
-interface FormData {
-    userCode: string;
-    otp: string;
-    newPassword: string;
-    confirmPassword: string;
-}
-
-type Step = 'userCode' | 'contact' | 'otp' | 'password' | 'success';
+import type { ContactOption, ForgotPasswordData, Step } from '../types';
+import RenderContactStep from '@/components/auth/renderContactStep';
+import RenderOtpStep from '@/components/auth/renderOtp';
+import { generateCaptcha } from '@/packages/utils/captcha';
+import { validatePassword } from '@/packages/validators/password';
+import { CheckResetPasswordOTP, ForgotPasswordUserContact, SendResetPasswordOTP, UpdatePasswordWithOTP } from '@/services/auth/passwordReset';
+import http from '@/packages/http/http';
+import Loading from '@/components/loading';
+import { PasswordRules } from '@/modules/evr/manualCreation/validator';
 
 const ForgotPasswordFlow: React.FC = () => {
 
@@ -26,35 +18,35 @@ const ForgotPasswordFlow: React.FC = () => {
 
     const steps: Step[] = ['userCode', 'contact', 'otp', 'password', 'success']
 
+    const [loading, setLoading] = useState<boolean>(false)
     const [currentStep, setCurrentStep] = useState<Step>('userCode');
     const [selectedContact, setSelectedContact] = useState<ContactOption | null>(null);
-    const [formData, setFormData] = useState<FormData>({
+
+    const emptyFormData: ForgotPasswordData = {
+        userType: '',
         userCode: '',
         otp: '',
+        captcha: '',
         newPassword: '',
         confirmPassword: ''
-    });
+    }
+
+    const [formData, setFormData] = useState<ForgotPasswordData>({ ...emptyFormData });
+    const [captchaString, setCaptchaString] = useState<string>("")
     const [showNewPassword, setShowNewPassword] = useState<boolean>(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
-    const [isLoading, setIsLoading] = useState<boolean>(false);
     const [otpTimer, setOtpTimer] = useState<number>(0);
 
-    const contactOptions: ContactOption[] = [
-        {
-            id: '1',
-            type: 'email',
-            value: 'john.doe@company.com',
-            masked: 'j***@company.com',
-            icon: <Mail className="h-5 w-5" />
-        },
-        {
-            id: '2',
-            type: 'sms',
-            value: '+1234567890',
-            masked: '+1***-***-7890',
-            icon: <Phone className="h-5 w-5" />
-        }
-    ];
+    const [contactOptions, setContactOptions] = useState<ContactOption[]>([]);
+
+    const resetCaptcha = () => {
+        setCaptchaString(generateCaptcha())
+    }
+
+    // CAPTCHA RESET
+    useEffect(() => {
+        resetCaptcha()
+    }, [])
 
     // OTP Timer effect
     useEffect(() => {
@@ -67,45 +59,80 @@ const ForgotPasswordFlow: React.FC = () => {
         return () => clearInterval(interval);
     }, [otpTimer]);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
 
     };
 
-    const validatePassword = (password: string): string[] => {
-        const errors = [];
-        if (password.length < 8) errors.push('At least 8 characters');
-        if (!/[A-Z]/.test(password)) errors.push('One uppercase letter');
-        if (!/[a-z]/.test(password)) errors.push('One lowercase letter');
-        if (!/\d/.test(password)) errors.push('One number');
-        if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) errors.push('One special character');
-        return errors;
-    };
-
     const handleUserCodeSubmit = async () => {
+        if (!formData.userType) {
+            toast.error('User type is required')
+            return;
+        }
+
         if (!formData.userCode) {
             toast.error('User code is required')
             return;
         }
 
-        setIsLoading(true);
-        setTimeout(() => {
-            setIsLoading(false);
+        setLoading(true)
+        ForgotPasswordUserContact(formData).then(([statusCode, contact, err]) => {
+            if (err || !contact) {
+                toast.error(err?.message ?? "Something went wrong")
+
+                if (statusCode === http.StatusForbidden) {
+                    setTimeout(() => { window.location.href = "/" }, 3000)
+                }
+                return
+            }
+
+            setContactOptions([
+                {
+                    type: 'email',
+                    masked: contact?.emailID ?? "Not Available",
+                    icon: <Mail className="h-5 w-5" />
+                },
+                {
+                    type: 'sms',
+                    masked: contact?.phoneNo ?? "Not Available",
+                    icon: <Phone className="h-5 w-5" />
+                }
+            ])
+
             setCurrentStep('contact');
-        }, 1500);
+
+        }).finally(() => {
+            setLoading(false)
+        })
     };
 
     const handleSendOtp = async () => {
         if (!selectedContact) return;
 
-        setIsLoading(true);
-        // Simulate OTP sending
-        setTimeout(() => {
-            setIsLoading(false);
+        if (formData.captcha !== captchaString) {
+            toast.error("Captcha mismatch")
+            return
+        }
+
+        setLoading(true)
+        SendResetPasswordOTP(formData, selectedContact.type).then(([statusCode, err]) => {
+            if (err) {
+                toast.error(err.message)
+
+                if (statusCode === http.StatusForbidden) {
+                    setTimeout(() => { window.location.href = "/" }, 3000)
+                }
+                return
+            }
+
             setCurrentStep('otp');
-            setOtpTimer(60); // 60 second timer
-        }, 1000);
+            setOtpTimer(30);
+
+        }).finally(() => {
+            setLoading(false)
+        })
+
     };
 
     const handleVerifyOtp = async () => {
@@ -114,12 +141,24 @@ const ForgotPasswordFlow: React.FC = () => {
             return;
         }
 
-        setIsLoading(true);
-        // Simulate OTP verification
-        setTimeout(() => {
-            setIsLoading(false);
+
+        setLoading(true)
+        CheckResetPasswordOTP(formData).then(([statusCode, err]) => {
+            if (err) {
+                toast.error(err.message)
+
+                if (statusCode === http.StatusForbidden) {
+                    setTimeout(() => { window.location.href = "/" }, 3000)
+                }
+                return
+            }
+
             setCurrentStep('password');
-        }, 1000);
+        }).finally(() => {
+            setLoading(false)
+        })
+
+
     };
 
     const handlePasswordReset = async () => {
@@ -137,21 +176,26 @@ const ForgotPasswordFlow: React.FC = () => {
             return
         }
 
-        setIsLoading(true);
-        // Simulate password reset
-        setTimeout(() => {
-            setIsLoading(false);
+
+        setLoading(true)
+        UpdatePasswordWithOTP(formData).then(([statusCode, err]) => {
+            if (err) {
+                toast.error(err.message)
+
+                if (statusCode === http.StatusForbidden) {
+                    setTimeout(() => { window.location.href = "/" }, 3000)
+                }
+                return
+            }
             setCurrentStep('success');
-        }, 1500);
+        }).finally(() => {
+            setLoading(false)
+        })
+
+
     };
 
-    const handleResendOtp = () => {
-        setOtpTimer(60);
-        // Simulate resending OTP
-        console.log('Resending OTP to:', selectedContact?.masked);
-    };
-
-    const renderEmailStep = () => (
+    const renderUserCodeStep = () => (
         <>
             <div className="text-center">
                 <h2 className="text-3xl font-semibold text-gray-900 mb-2">
@@ -164,6 +208,31 @@ const ForgotPasswordFlow: React.FC = () => {
 
             <div className="bg-white py-8 px-6 shadow-sm border border-gray-200 rounded-lg">
                 <div className="space-y-6">
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            User Type
+                        </label>
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <User className="h-5 w-5 text-gray-400" />
+                            </div>
+                            <select
+                                name="userType"
+                                required
+                                value={formData.userType}
+                                onChange={handleInputChange}
+                                autoComplete="on"
+                                className="input-block text-sm"
+                            >
+                                <option value="">Select User Type</option>
+                                <option value="employee">Employee</option>
+                                <option value="entity">Entity</option>
+                            </select>
+                        </div>
+                    </div>
+
+
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             User Code
@@ -178,7 +247,7 @@ const ForgotPasswordFlow: React.FC = () => {
                                 value={formData.userCode}
                                 autoComplete='off'
                                 onChange={handleInputChange}
-                                className={`block w-full pl-10 pr-3 py-3 border rounded placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:border-transparent text-gray-900 text-sm`}
+                                className={`input-block text-sm`}
                                 placeholder="Enter your user code"
                             />
                         </div>
@@ -186,8 +255,7 @@ const ForgotPasswordFlow: React.FC = () => {
 
                     <button
                         onClick={handleUserCodeSubmit}
-                        disabled={isLoading}
-                        className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                        className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 cursor-pointer"
                     >
                         Continue
                     </button>
@@ -197,121 +265,27 @@ const ForgotPasswordFlow: React.FC = () => {
     );
 
     const renderContactStep = () => (
-        <>
-            <div className="text-center">
-
-                <h2 className="text-3xl font-semibold text-gray-900 mb-2">
-                    Verify Identity
-                </h2>
-                <p className="text-gray-600 text-sm">
-                    Choose how you'd like to receive your verification code
-                </p>
-            </div>
-
-            <div className="bg-white py-8 px-6 shadow-sm border border-gray-200 rounded-lg">
-                <div className="space-y-4">
-                    {contactOptions.map((option) => (
-                        <div
-                            key={option.id}
-                            onClick={() => setSelectedContact(option)}
-                            className={`p-4 border rounded-lg cursor-pointer transition-all duration-200 ${selectedContact?.id === option.id
-                                ? 'border-blue-900 bg-blue-50'
-                                : 'border-gray-300 hover:border-gray-400'
-                                }`}
-                        >
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center">
-                                    <div className={`p-2 rounded-lg mr-3 ${selectedContact?.id === option.id
-                                        ? 'bg-blue-900 text-white'
-                                        : 'bg-gray-100 text-gray-600'
-                                        }`}>
-                                        {option.icon}
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-900">
-                                            {option.type === 'email' ? 'Email' : 'SMS'}
-                                        </p>
-                                        <p className="text-sm text-gray-600">{option.masked}</p>
-                                    </div>
-                                </div>
-                                <div className={`w-5 h-5 rounded-full border-2 ${selectedContact?.id === option.id
-                                    ? 'border-blue-900 bg-blue-900'
-                                    : 'border-gray-300'
-                                    }`}>
-                                    {selectedContact?.id === option.id && (
-                                        <Check className="w-3 h-3 text-white m-0.5" />
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-
-                    <button
-                        onClick={handleSendOtp}
-                        disabled={!selectedContact || isLoading}
-                        className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 mt-6"
-                    >
-                        Send Verification Code
-                    </button>
-                </div>
-            </div>
-        </>
+        <RenderContactStep
+            handleSendOtp={handleSendOtp}
+            contactOptions={contactOptions}
+            selectedContact={selectedContact}
+            setSelectedContact={setSelectedContact}
+            captchaString={captchaString}
+            captcha={formData.captcha}
+            handleInputChange={handleInputChange}
+            refreshCaptcha={() => resetCaptcha()}
+        />
     );
 
     const renderOtpStep = () => (
-        <>
-            <div className="text-center">
-                <h2 className="text-3xl font-semibold text-gray-900 mb-2">
-                    Enter Verification Code
-                </h2>
-                <p className="text-gray-600 text-sm">
-                    We sent a 6-digit code to {selectedContact?.masked}
-                </p>
-            </div>
-
-            <div className="bg-white py-8 px-6 shadow-sm border border-gray-200 rounded-lg">
-                <div className="space-y-6">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Verification Code
-
-                            <input
-                                name="otp"
-                                type="text"
-                                maxLength={6}
-                                value={formData.otp}
-                                onChange={handleInputChange}
-                                className={`block w-full px-3 py-3 border rounded placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:border-transparent text-gray-900 text-sm text-center tracking-widest`}
-                                placeholder="Enter 6-digit code"
-                            />
-                        </label>
-                    </div>
-
-                    <button
-                        onClick={handleVerifyOtp}
-                        disabled={isLoading}
-                        className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-                    >
-                        Verify Code
-                    </button>
-
-                    <div className="text-center">
-                        {otpTimer > 0 ? (
-                            <p className="text-sm text-gray-600">
-                                Resend code in {otpTimer}s
-                            </p>
-                        ) : (
-                            <button
-                                onClick={handleResendOtp}
-                                className="text-sm text-blue-900 hover:text-blue-800 font-medium"
-                            >
-                                Resend verification code
-                            </button>
-                        )}
-                    </div>
-                </div>
-            </div>
-        </>
+        <RenderOtpStep
+            selectedContact={selectedContact}
+            otp={formData.otp}
+            handleVerifyOtp={handleVerifyOtp}
+            otpTimer={otpTimer}
+            handleResendOtp={handleSendOtp}
+            handleInputChange={handleInputChange}
+        />
     );
 
     const renderPasswordStep = () => (
@@ -326,58 +300,59 @@ const ForgotPasswordFlow: React.FC = () => {
             </div>
 
             <div className="bg-white py-8 px-6 shadow-sm border border-gray-200 rounded-lg">
-                <div className="space-y-6">
+                <div className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             New Password
-
-                            <div className="relative">
-                                <input
-                                    name="newPassword"
-                                    type={showNewPassword ? 'text' : 'password'}
-                                    value={formData.newPassword}
-                                    onChange={handleInputChange}
-                                    className={`block w-full pr-10 py-3 px-3 border rounded placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:border-transparent text-gray-900 text-sm`}
-                                    placeholder="Enter new password"
-                                />
-                                <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowNewPassword(!showNewPassword)}
-                                        className="text-gray-400 hover:text-gray-600 focus:outline-none"
-                                    >
-                                        {showNewPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                                    </button>
-                                </div>
-                            </div>
                         </label>
 
+                        <div className="relative">
+                            <input
+                                name="newPassword"
+                                type={showNewPassword ? 'text' : 'password'}
+                                autoComplete='off'
+                                value={formData.newPassword}
+                                onChange={handleInputChange}
+                                className={`block w-full pr-10 py-3 px-3 border rounded placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:border-transparent text-gray-900 text-sm`}
+                                placeholder="Enter new password"
+                            />
+                            <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowNewPassword(!showNewPassword)}
+                                    className="text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer"
+                                >
+                                    {showNewPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             Confirm Password
-
-                            <div className="relative">
-                                <input
-                                    name="confirmPassword"
-                                    type={showConfirmPassword ? 'text' : 'password'}
-                                    value={formData.confirmPassword}
-                                    onChange={handleInputChange}
-                                    className={`block w-full pr-10 py-3 px-3 border rounded placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:border-transparent text-gray-900 text-sm`}
-                                    placeholder="Confirm new password"
-                                />
-                                <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                        className="text-gray-400 hover:text-gray-600 focus:outline-none"
-                                    >
-                                        {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                                    </button>
-                                </div>
-                            </div>
                         </label>
+
+                        <div className="relative">
+                            <input
+                                name="confirmPassword"
+                                type={showConfirmPassword ? 'text' : 'password'}
+                                autoComplete='off'
+                                value={formData.confirmPassword}
+                                onChange={handleInputChange}
+                                className={`block w-full pr-10 py-3 px-3 border rounded placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-900 focus:border-transparent text-gray-900 text-sm`}
+                                placeholder="Confirm new password"
+                            />
+                            <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    className="text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer"
+                                >
+                                    {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <div className="relative inline-block w-full">
@@ -386,12 +361,10 @@ const ForgotPasswordFlow: React.FC = () => {
                                 <Info className="h-5 w-5 text-gray-500 cursor-pointer hover:text-blue-400" />
 
                                 {/* Tooltip positioned relative to the group wrapper */}
-                                <div className="absolute right-0 top-6 hidden w-64 rounded-md bg-gray-50 p-3 text-xs text-gray-600 shadow-lg group-hover:block hover:block z-50">
+                                <div className="absolute right-10 -top-10 hidden w-64 rounded-md bg-gray-50 p-3 text-[10px] text-gray-600 shadow-lg group-hover:block hover:block z-50">
                                     <p className="font-medium mb-1">Password requirements:</p>
                                     <ul className="space-y-1">
-                                        <li>• At least 8 characters long</li>
-                                        <li>• One uppercase and one lowercase letter</li>
-                                        <li>• One number and one special character</li>
+                                        {PasswordRules.map((r) => (<li>• {r}</li>))}
                                     </ul>
                                 </div>
                             </div>
@@ -401,8 +374,7 @@ const ForgotPasswordFlow: React.FC = () => {
 
                     <button
                         onClick={handlePasswordReset}
-                        disabled={isLoading}
-                        className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                        className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 cursor-pointer"
                     >
                         Reset Password
                     </button>
@@ -414,11 +386,7 @@ const ForgotPasswordFlow: React.FC = () => {
     const renderSuccessStep = () => (
         <>
             <div className="text-center">
-                <div className="flex justify-center mb-6">
-                    <div className="bg-green-100 p-3 rounded-lg">
-                        <Check className="h-8 w-8 text-green-600" />
-                    </div>
-                </div>
+
                 <h2 className="text-3xl font-semibold text-gray-900 mb-2">
                     Password Reset Successful
                 </h2>
@@ -435,17 +403,11 @@ const ForgotPasswordFlow: React.FC = () => {
 
                     <button
                         onClick={() => {
-                            setFormData({
-                                userCode: '',
-                                otp: '',
-                                newPassword: '',
-                                confirmPassword: ''
-                            });
+                            setFormData({ ...emptyFormData });
                             setSelectedContact(null);
                             navigate(-1)
-
                         }}
-                        className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 transition-colors duration-200"
+                        className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 transition-colors duration-200 cursor-pointer"
                     >
                         Back to Sign In
                     </button>
@@ -454,8 +416,10 @@ const ForgotPasswordFlow: React.FC = () => {
         </>
     );
 
+    if (loading) return <Loading />
+
     return (
-        <div className='bg-gray-50'>
+        <div className='rainbow-bg'>
             <div className="absolute top-0 left-0 w-full z-50 flex items-center justify-center px-4 sm:px-6 lg:px-8">
 
                 {(() => {
@@ -477,7 +441,7 @@ const ForgotPasswordFlow: React.FC = () => {
                         <div className="max-w-md w-full space-y-8 pt-3">
                             <button
                                 onClick={handleBackClick}
-                                className="flex items-center text-sm text-gray-600 hover:text-gray-900 mb-4"
+                                className="flex items-center text-sm text-gray-600 hover:text-gray-900 mb-4 cursor-pointer"
                             >
                                 <ArrowLeft className="h-4 w-4 mr-1" />
                                 Back
@@ -490,8 +454,8 @@ const ForgotPasswordFlow: React.FC = () => {
 
             <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8">
 
-                <div className="max-w-md w-full space-y-8">
-                    {currentStep === 'userCode' && renderEmailStep()}
+                <div className="max-w-md w-full space-y-8 pt-9">
+                    {currentStep === 'userCode' && renderUserCodeStep()}
                     {currentStep === 'contact' && renderContactStep()}
                     {currentStep === 'otp' && renderOtpStep()}
                     {currentStep === 'password' && renderPasswordStep()}

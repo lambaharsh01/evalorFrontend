@@ -62,3 +62,14 @@ export interface payloadParameter {
     total: number
     checklists: payloadChecklist[]
 }
+
+export interface EVRManuals {
+    id: number;
+    name: string;
+    code: string | null;
+    totalScore: number;
+    status: string;
+    empCode: string;
+    empName: string;
+    createdAt: string;
+};

@@ -34,3 +34,14 @@ export const checklistValidation = ({
     return { notStarted, isCompleted, maxOptions, total }
 
 }
+
+export const PasswordRules :string[] = [
+    "At least 10 characters long",
+    "Contains at least one uppercase letter (A-Z)",
+    "Contains at least one lowercase letter (a-z)",
+    "Contains at least one digit (0-9)",
+    "Contains at least one special character (@$!%*?&)",
+    "Must not contain your user ID",
+    "Must not contain continuous numbers (e.g., 1234 or 4321)",
+    "Must not contain common keyboard sequences (e.g., qwerty, asdf, zxcv, abcd, password)",
+]

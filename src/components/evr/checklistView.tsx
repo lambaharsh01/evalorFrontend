@@ -66,13 +66,7 @@ const ChecklistView: React.FC<checklistViewProp> = ({
         }
 
         setLoading(true)
-
         setTimeout(() => { setLoading(false) }, 5000)
-
-        // console.log("Selected file:", file)
-        // console.log("File name:", file.name)
-        // console.log("File size:", file.size, "bytes")
-        // console.log("MIME type:", file.type)
     }
 
     return (<div className="bg-white rounded-sm border border-[#cbd5e1] text-xs shadow-md mb-2">

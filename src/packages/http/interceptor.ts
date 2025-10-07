@@ -7,8 +7,8 @@ import type {
 
 import type { reqInterceptorArguments } from "./types";
 import { convertQueryString } from "./formater";
-
-export const tokenFelidName: string = "accessToken";
+import http from "./http";
+import { storageKeys } from "../utils/constants";
 
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: "http://localhost:3051/api",
@@ -17,7 +17,7 @@ const axiosInstance: AxiosInstance = axios.create({
 
 axiosInstance.interceptors.request.use(
   (req: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem(tokenFelidName);
+    const token = localStorage.getItem(storageKeys.accessToken);
 
     if (token) {
       req.headers.Authorization = `Bearer ${token}`;
@@ -75,46 +75,46 @@ export const reqInterceptor = async ({
     return response.data;
   } catch (error: any) {
     let statusMessage: string;
-    const errorCode = error?.response?.status ?? 405;
+    const errorCode = error?.response?.status ?? http.StatusMethodNotAllowed;
 
     switch (errorCode) {
-      case 400:
+      case http.StatusBadRequest:
         statusMessage = "Bad Request";
         break;
-      case 401:
+      case http.StatusUnauthorized:
         statusMessage = "Unauthorized";
         break;
-      case 402:
+      case http.StatusPaymentRequired:
         statusMessage = "Payment Required";
         break;
-      case 403:
+      case http.StatusForbidden:
         statusMessage = "Forbidden";
         break;
-      case 404:
+      case http.StatusNotFound:
         statusMessage = "Not Found";
         break;
-      case 405:
+      case http.StatusMethodNotAllowed:
         statusMessage = "Method Not Allowed";
         break;
-      case 406:
+      case http.StatusNotAcceptable:
         statusMessage = "Not Acceptable";
         break;
-      case 407:
+      case http.StatusProxyAuthRequired:
         statusMessage = "Proxy Authentication Required";
         break;
-      case 408:
+      case http.StatusRequestTimeout:
         statusMessage = "Request Timeout";
         break;
-      case 409:
+      case http.StatusConflict:
         statusMessage = "Conflict";
         break;
-      case 413:
+      case http.StatusRequestEntityTooLarge:
         statusMessage = "Payload Too Large";
         break;
-      case 414:
+      case http.StatusRequestURITooLong:
         statusMessage = "URI Too Long";
         break;
-      case 429:
+      case http.StatusTooManyRequests:
         statusMessage = "Too Many Requests";
         break;
       default:
@@ -125,13 +125,15 @@ export const reqInterceptor = async ({
     if (errorCode === 401 && !url.includes("/auth")) {
       statusMessage = "Session Expired, Sign In Again";
 
-      localStorage.removeItem(tokenFelidName);
+      localStorage.removeItem(storageKeys.accessToken);
+      localStorage.removeItem(storageKeys.userDetails);
       window.location.href = "/";
     }
 
-    const errorMessage =
-      error?.response?.data?.message ?? error?.error ?? statusMessage;
+    const errorMessage = error?.response?.data?.message ?? error?.error ?? statusMessage;
+    const customError = new Error(errorMessage) as Error & { status?: number };
+    customError.status = errorCode;
 
-    throw new Error(errorMessage);
+    throw customError;
   }
 };

@@ -27,6 +27,13 @@ export const emptyChecklist: checklistCreation = {
 
 export const emptyEVR: evrCreation = {
     id: 0,
+    name: "",
+    code: null,
     total: 0,
+    status: 'Draft',
+    useParameters: false,
+    useManpower: false,
+    parametersCompleted: false,
+    manpowerCompleted: false,
     parameters:[],
 }

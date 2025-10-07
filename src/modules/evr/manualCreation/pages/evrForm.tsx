@@ -16,7 +16,7 @@ import type { checklistCreation, evrCreation, parameterCreation, payloadParamete
 import { emptyChecklist, emptyEVR, emptyParameter } from '../data';
 import { checklistValidation } from '../validator';
 import { compressToWebP } from '@/packages/utils/compressToWebP';
-import { GetEVRForm, SaveEvrForm } from '@/services/evr/manualCreation';
+import { GetEVRForm, SaveEvrForm } from '@/services/evr/evrForm';
 import { useParams } from 'react-router-dom';
 import clsx from 'clsx';
 

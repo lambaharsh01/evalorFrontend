@@ -10,79 +10,47 @@ import {
     SmartSearchPagination,
 } from "@/components/table"
 import Sidebar from "@/components/sidebar";
+import { GetAllEVRForm } from "@/services/evr/evrManual";
+import type { EVRManuals } from "../types";
+import { toast } from "sonner";
+import Loading from "@/components/loading";
+import { formatDate } from "@/packages/utils/date";
+import { useNavigate } from "react-router-dom";
 
 
-type EVR = {
-    id: number;
-    evrName: string;
-    evrCode: string;
-    totalScore: number;
-    status: string;
-    createdBy: string;
-    createdAt: string;
-};
-
-const dummyData: EVR[] = [
-    {
-        id: 1,
-        evrName: "Energy Audit EVR",
-        evrCode: "EVR001",
-        totalScore: 85,
-        status: "Active",
-        createdBy: "Harsh",
-        createdAt: "2025-08-20T10:00:00Z",
-    },
-    {
-        id: 2,
-        evrName: "Safety Compliance EVR",
-        evrCode: "EVR002",
-        totalScore: 92,
-        status: "Inactive",
-        createdBy: "Admin",
-        createdAt: "2025-08-18T14:30:00Z",
-    },
-    {
-        id: 3,
-        evrName: "Performance Review EVR",
-        evrCode: "EVR003",
-        totalScore: 76,
-        status: "Draft",
-        createdBy: "Riya",
-        createdAt: "2025-08-15T09:15:00Z",
-    },
-    {
-        id: 4,
-        evrName: "Annual Report EVR",
-        evrCode: "EVR004",
-        totalScore: 88,
-        status: "Active",
-        createdBy: "Karan",
-        createdAt: "2025-08-10T08:00:00Z",
-    },
-];
 
 const EVRManual: React.FC = () => {
-    const [data, setData] = useState<EVR[]>([]);
+
+    const navigate = useNavigate()
+
+    const [loading, setLoading] = useState<boolean>(true)
+    const [data, setData] = useState<EVRManuals[]>([]);
     const [search] = useState("");
-    const [limit, setLimit] = useState(10);
+    const [limit, setLimit] = useState(8);
     const [offset, setOffset] = useState(0);
     const [total, setTotal] = useState(0);
 
     const fetchEVRs = async () => {
-        // 🔹 Replace this block later with your backend API call
-        const filtered = dummyData.filter((d) =>
-            d.evrName.toLowerCase().includes(search.toLowerCase())
-        );
 
-        setTotal(filtered.length);
-        const paginated = filtered.slice(offset, offset + limit);
-        setData(paginated);
+        setLoading(true)
+        GetAllEVRForm({ offset, limit, search }).then(([d, t, err]) => {
+            if (err) {
+                toast.error(err.message)
+                return
+            }
+            setData(d)
+            setTotal(t)
+        }).finally(() => {
+            setLoading(false)
+        })
     };
 
     useEffect(() => {
         fetchEVRs();
     }, [search, limit, offset]);
 
+
+    if (loading) return <Loading />
 
     return (
         <Sidebar
@@ -117,14 +85,17 @@ const EVRManual: React.FC = () => {
                     <tbody>
                         {data.map((row, i) => (
                             <CustomTr key={row.id} index={i}>
-                                <CustomTd sticky bold>{row.evrName}</CustomTd>
-                                <CustomTd>{row.evrCode}</CustomTd>
+                                <CustomTd sticky bold>{row.name}</CustomTd>
+                                <CustomTd>{row.code ?? "-"}</CustomTd>
                                 <CustomTd>{row.totalScore}</CustomTd>
                                 <CustomTd>{row.status}</CustomTd>
-                                <CustomTd>{row.createdBy}</CustomTd>
-                                <CustomTd>{new Date(row.createdAt).toLocaleString()}</CustomTd>
+                                <CustomTd>{row.empName}</CustomTd>
+                                <CustomTd>{formatDate(row.createdAt)}</CustomTd>
                                 <CustomTd>
-                                    <button className="text-blue-600 hover:underline">View</button>
+                                    <button
+                                        className="text-blue-600 hover:underline cursor-pointer"
+                                        onClick={() => { navigate(`/evr-form-creation/${row.id}`) }}
+                                    >View</button>
                                 </CustomTd>
                             </CustomTr>
                         ))}

@@ -28,3 +28,18 @@ export const FYMtoDate = (financialYear: string, month: string): Date | null => 
     return null;
   }
 };
+
+
+export function formatDate(input: string): string {
+  const hasTime = input.includes(" ");
+
+  const parseFormat = hasTime ? "yyyy-MM-dd HH:mm:ss" : "yyyy-MM-dd";
+
+  try {
+    const parsedDate = parse(input, parseFormat, new Date());
+    const outputFormat = hasTime ? "dd/MM/yyyy HH:mm:ss" : "dd/MM/yyyy";
+    return format(parsedDate, outputFormat);
+  } catch {
+    return input;
+  }
+}

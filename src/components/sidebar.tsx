@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     Menu,
@@ -14,14 +14,31 @@ import {
     ChevronRight,
     Circle,
     ArrowLeft,
+    LogOut,
 } from "lucide-react";
 import type { SidebarItem, SidebarProp } from "./types";
 import { isMdOrLess, isMdOrMore } from "@/packages/utils/screen";
+import { showLogoutWarningAlert } from "./alerts";
+import { storageKeys } from "@/packages/utils/constants";
+import { getUserDetails } from "@/packages/utils/storage";
 
 const Sidebar: React.FC<SidebarProp> = ({ children, title }) => {
 
     const navigate = useNavigate()
+    const [user, setUser] = useState({ name: "", role: "", initials: "" })
 
+    useEffect(() => {
+        const userDetails = getUserDetails()
+        if (!userDetails) {
+            navigate("/main-dashboard")
+            return
+        }
+
+        const { userName, role } = userDetails
+        const initials: string = userName.split(" ").reduce((acc, w) => acc + w[0], "").toUpperCase()
+        setUser({ name: userName, role: role.toUpperCase(), initials: initials })
+
+    }, [])
 
     const [sidebarOpen, setSidebarOpen] = useState<boolean>(isMdOrMore());
     const isSmallScreen = isMdOrLess()
@@ -34,11 +51,29 @@ const Sidebar: React.FC<SidebarProp> = ({ children, title }) => {
 
     const [items, setItems] = useState<SidebarItem[]>([])
 
+    const [profileOptions, setProfileOptions] = useState(false)
+    const containerRef = useRef<HTMLDivElement | null>(null)
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (
+                containerRef.current &&
+                !containerRef.current.contains(event.target as Node)
+            ) {
+                setProfileOptions(false);
+            }
+        }
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
     useEffect(() => {
 
         const items: SidebarItem[] = [
 
-            { id: "1", icon: LayoutDashboard, label: "Dashboard", subItems: [], path: "/" },
+            { id: "1", icon: LayoutDashboard, label: "Dashboard", subItems: [], path: "/main-dashboard" },
             {
                 id: "2", icon: FileText, label: "EVR", subItems: [
                     { label: "Manual", path: "/evr-manual" },
@@ -133,6 +168,17 @@ const Sidebar: React.FC<SidebarProp> = ({ children, title }) => {
         setActiveMenuItem(item);
     };
 
+    const handleLogout = async () => {
+
+        const confirmed: boolean = await showLogoutWarningAlert()
+        if (!confirmed) return
+
+
+        localStorage.removeItem(storageKeys.accessToken);
+        localStorage.removeItem(storageKeys.userDetails);
+        navigate("/")
+    }
+
     return (
         <div className="flex min-h-screen font-sans">
 
@@ -154,8 +200,8 @@ const Sidebar: React.FC<SidebarProp> = ({ children, title }) => {
                         {/* Left Section */}
                         <div className="flex items-center space-x-3">
                             <div>
-                                <h2 className="text-[#003366] font-medium">Harsh Yadav Lamba</h2>
-                                <h3 className="text-slate-500 text-sm">AABBCC</h3>
+                                <h2 className="text-[#003366] font-medium">{user.name}</h2>
+                                <h3 className="text-slate-500 text-sm">{user.role}</h3>
                             </div>
                         </div>
 
@@ -246,13 +292,26 @@ const Sidebar: React.FC<SidebarProp> = ({ children, title }) => {
                         )}
                     </div>
 
-                    {/* Right side */}
-                    <div className="flex items-center space-x-4">
-                        <button className="relative p-2 hover:bg-[#f1f2f4] rounded-lg transition-colors duration-200 group">
-                            <div className="sidebar-initials-section bg-[#003366]/10 rounded-full flex items-center justify-center w-10 h-10">
-                                <h1 className="text-[#003366] font-bold">HL</h1>
+                    <div className="relative inline-flex items-center" ref={containerRef}>
+                        <button
+                            onClick={() => setProfileOptions(!profileOptions)}
+                            className="relative p-2 hover:bg-[#f1f2f4] rounded-lg transition-colors duration-200"
+                        >
+                            <div className="sidebar-initials-section bg-[#003366]/10 rounded-full flex items-center justify-center w-10 h-10 cursor-pointer">
+                                <h1 className="text-[#003366] font-bold">{user.initials}</h1>
                             </div>
                         </button>
+
+                        {profileOptions && (
+                            <div className="absolute right-0 top-14 w-40 bg-white rounded shadow-lg p-1 z-50">
+                                <button
+                                    onClick={handleLogout}
+                                    className="w-full text-left px-4 py-1 text-sm text-gray-700 hover:bg-gray-100 rounded-md flex items-center cursor-pointer"
+                                >
+                                    <LogOut size={18} /> <span className="ms-2 mb-0.5">Logout</span>
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </header>
 

@@ -175,7 +175,7 @@ export const NavigatePagination: React.FC<NavigatePaginationProp> = ({ offset, l
             <button
                 disabled={offset === 0}
                 onClick={() => setOffset((prev) => Math.max(prev - limit, 0))}
-                className="pagination-navigation-text-padding border rounded-full disabled:opacity-50 hover:bg-gray-100"
+                className="pagination-navigation-text-padding border rounded-full disabled:opacity-50 text-[#003366] bg-white hover:bg-[#003366] hover:text-white"
                 title="Previous"
             >
                 <ChevronLeft className="w-4 h-4" />
@@ -190,7 +190,7 @@ export const NavigatePagination: React.FC<NavigatePaginationProp> = ({ offset, l
             <button
                 disabled={offset + limit >= total}
                 onClick={() => setOffset((prev) => prev + limit)}
-                className="pagination-navigation-text-padding border rounded-full disabled:opacity-50 hover:bg-gray-100"
+                className="pagination-navigation-text-padding border rounded-full disabled:opacity-50 text-[#003366] bg-white hover:bg-[#003366] hover:text-white"
                 title="Next"
             >
                 <ChevronRight className="w-4 h-4" />
@@ -215,7 +215,7 @@ export const NavigatePagination: React.FC<NavigatePaginationProp> = ({ offset, l
                     hover:border-[#003366] hover:shadow-md 
                     focus:outline-none focus:border-[#003366]"
             >
-                {[2, 5, 10].map((l) => (
+                {[8, 10, 20, 25, 50, 100].map((l) => (
                     <option key={l} value={l}>
                         {l}
                     </option>
