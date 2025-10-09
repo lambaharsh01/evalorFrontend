@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Eye, EyeOff, Lock, Mail, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { LoginFormData } from '../types';
@@ -6,12 +6,13 @@ import { toast } from 'sonner';
 import { AuthSignIn, getPermissionsAndSync } from '@/services/auth/signInAndMfa';
 import Loading from '@/components/loading';
 import { setStorage } from '@/packages/utils/storage';
+import { storageKeys } from '@/packages/utils/constants';
 
 const Signin: React.FC = () => {
 
     const navigate = useNavigate()
 
-    const [loading, setLoading] = useState<boolean>(false)
+    const [loading, setLoading] = useState<boolean>(true)
     const [formData, setFormData] = useState<LoginFormData>({
         userType: '',
         userCode: '',
@@ -19,6 +20,17 @@ const Signin: React.FC = () => {
         captcha: '',
         otp: '',
     });
+
+    useEffect(() => {
+
+        const token = localStorage.getItem(storageKeys.accessToken);
+        if (token) {
+            navigate("/main-dashboard", { replace: true })
+            return
+        }
+
+        setLoading(false)
+    }, [])
 
     const [showPassword, setShowPassword] = useState<boolean>(false);
 
@@ -73,7 +85,7 @@ const Signin: React.FC = () => {
 
             getPermissionsAndSync().finally(() => {
                 setLoading(false)
-                navigate("/main-dashboard")
+                navigate("/main-dashboard", { replace: true })
             })
         })
 

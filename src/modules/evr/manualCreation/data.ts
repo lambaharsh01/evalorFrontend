@@ -1,4 +1,4 @@
-import type { checklistCreation, evrCreation, parameterCreation } from "./types"
+import type { checklistCreation, evrCreation, InitEvr, parameterCreation } from "./types"
 
 export const emptyParameter: parameterCreation = {
     name: "",
@@ -36,4 +36,12 @@ export const emptyEVR: evrCreation = {
     parametersCompleted: false,
     manpowerCompleted: false,
     parameters:[],
+}
+
+export const emptyInitEVR:InitEvr = {
+    name: "",
+    code: "",
+    totalScore: 0,
+    useParameters: false,
+    useManpower: false,
 }

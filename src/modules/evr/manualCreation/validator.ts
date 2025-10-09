@@ -1,4 +1,4 @@
-import type { checklistCreation } from "./types";
+import type { checklistCreation, InitEvr } from "./types";
 
 export const checklistValidation = ({
     name,
@@ -45,3 +45,9 @@ export const PasswordRules :string[] = [
     "Must not contain continuous numbers (e.g., 1234 or 4321)",
     "Must not contain common keyboard sequences (e.g., qwerty, asdf, zxcv, abcd, password)",
 ]
+
+export const evrManualCreationValidation = ({name, totalScore}: InitEvr): string => {
+    if(!name.trim()) return "Please enter EVR name"
+    if(!totalScore) return "EVR Score has to be more than 0"
+    return ""
+}

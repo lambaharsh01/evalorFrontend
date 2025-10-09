@@ -1,5 +1,5 @@
 import { handleImageError } from "@/packages/errors/imageError";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import type { ImageWithLoaderProps, SectionLoaderProps } from "./types";
 import clsx from "clsx";
 
@@ -213,6 +213,5 @@ const Loading: React.FC = () => {
     </div>
   );
 };
-
 
 export default Loading

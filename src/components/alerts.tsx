@@ -100,3 +100,22 @@ export const showFormCompletedConformationAlert = async (): Promise<boolean> => 
 
     return result.isConfirmed;
 };
+
+export const showEVRDeleteWarningAlert = async (): Promise<boolean> => { // Confirm button clicked
+    const result = await SwalAlert.fire({
+        title: <strong className="text-md">Are you sure?</strong>,
+        html: (
+            <p className="text-sm">
+                The deleted EVR and it's contents will be <b>Lost Forever</b>.
+            </p>
+        ),
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Yes, Delete",
+        cancelButtonText: "Cancel",
+        confirmButtonColor: "#f59e0b", // Tailwind's amber-500
+        cancelButtonColor: "#6c757d",
+    });
+
+    return result.isConfirmed;
+};

@@ -9,10 +9,26 @@ import {
 import Calendar from "@/components/calendar";
 import Sidebar from "@/components/sidebar";
 import Notification from "@/components/notifications";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { storageKeys } from "@/packages/utils/constants";
+import Loading from "@/components/loading";
 
 
 export default function Dashboard() {
 
+    const navigate = useNavigate()
+    const [loading, setLoading] = useState<boolean>(true)
+
+    useEffect(() => {
+        const token = localStorage.getItem(storageKeys.accessToken);
+        if (!token) {
+            navigate("/", { replace: true })
+            return
+        }
+
+        setLoading(false)
+    }, [])
 
 
     const dvrData = [
@@ -31,6 +47,7 @@ export default function Dashboard() {
         { id: "5", division: "Central", divisionName: "Edward", totalPoints: 19, openPoints: 3, completedPoints: 16 },
     ];
 
+    if (loading) return <Loading />
     return (
         <Sidebar
             title="Dashboard"

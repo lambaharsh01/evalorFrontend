@@ -55,6 +55,7 @@ export interface CustomTableWrapperProp {
     footerContent?: React.ReactNode;
     footer?: string;
     className?: string;
+    loading?: boolean
 }
 
 export interface CustomTableProp {
@@ -96,6 +97,7 @@ export interface CustomTrProp {
 
 export interface SmartSearchPaginationProp {
     onSearch:(value: string) => void;
+    val: string;
 }
 
 export interface NavigatePaginationProp {
@@ -141,6 +143,13 @@ export interface CustomTextareaProps extends TextareaAutosizeProps {
     className?: string;
     minRows?: number;
     maxRows?: number;
+}
+
+
+export interface SwitchProps {
+    checked: boolean;
+    disabled?: boolean;
+    onChange: (value: boolean) => void;
 }
 
 // FORM END

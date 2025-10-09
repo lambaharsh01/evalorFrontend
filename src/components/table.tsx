@@ -13,6 +13,7 @@ export const CustomTableWrapper: React.FC<CustomTableWrapperProp> = ({
     footer,
     footerContent,
     className,
+    // loading,
 }) => (
     <div
         className={clsx(
@@ -23,9 +24,9 @@ export const CustomTableWrapper: React.FC<CustomTableWrapperProp> = ({
         {/* Title */}
         {Boolean(title) && (
             <div
-                className="header-title-padding text-white bg-[#003366]"
+                className="header-title-padding text-white bg-[#003366] flex justify-between"
             >
-                <h1>
+                <h1 className="py-1">
                     {title}
                 </h1>
             </div>
@@ -78,7 +79,7 @@ export const CustomTh: React.FC<CustomThProp> = ({
 }) => (
     <th
         className={clsx(
-            "text-left text-gray-900 border-b border-t border-[#dce1e6]",
+            "text-left text-gray-900 border-b border-t border-[#dce1e6] whitespace-nowrap",
             sticky && "sticky bg-[#fcfcfd] left-0 z-10 shadow-sm",
             partition && "border-r border-[#dce1e6]",
             (partition ? "after:content-[''] after:absolute after:top-0 after:right-0 after:h-full after:w-px after:bg-[#dce1e6]" : ""),
@@ -100,7 +101,7 @@ export const CustomTd: React.FC<CustomTdProp> = ({
     <td
         colSpan={colSpan}
         className={clsx(
-            "text-gray-700 border-b border-[#dce1e6]",
+            "text-gray-700 border-b border-[#dce1e6] whitespace-nowrap",
             sticky && "sticky bg-[#fcfcfd] left-0 z-10 shadow-sm",
             partition && "border-r border-[#dce1e6]",
             (partition ? "after:content-[''] after:absolute after:top-0 after:right-0 after:h-full after:w-px after:bg-[#dce1e6]" : ""),
@@ -129,8 +130,9 @@ export const CustomTr: React.FC<CustomTrProp> = ({
 
 export const SmartSearchPagination: React.FC<SmartSearchPaginationProp> = ({
     onSearch,
+    val,
 }) => {
-    const [inputValue, setInputValue] = useState<string>("");
+    const [inputValue, setInputValue] = useState<string>(val);
     const [hasTyped, setHasTyped] = useState(false);
 
     useEffect(() => {
@@ -151,6 +153,7 @@ export const SmartSearchPagination: React.FC<SmartSearchPaginationProp> = ({
             <div className="smart-search-w">
                 <CustomInput
                     type="text"
+                    className="h-9"
                     placeholder="Smart search"
                     value={inputValue}
                     onChange={(e) => {
@@ -175,14 +178,14 @@ export const NavigatePagination: React.FC<NavigatePaginationProp> = ({ offset, l
             <button
                 disabled={offset === 0}
                 onClick={() => setOffset((prev) => Math.max(prev - limit, 0))}
-                className="pagination-navigation-text-padding border rounded-full disabled:opacity-50 text-[#003366] bg-white hover:bg-[#003366] hover:text-white"
+                className="pagination-navigation-text-padding border rounded-full disabled:opacity-50 text-[#003366] bg-white hover:bg-[#003366] hover:text-white cursor-pointer"
                 title="Previous"
             >
                 <ChevronLeft className="w-4 h-4" />
             </button>
 
             <span className="pagination-navigation-text">
-                {isMdScreen && "Page"}
+                {isMdScreen && "Page "}
 
                 {Math.floor(offset / limit) + 1} of {totalPages || 1}
             </span>
@@ -190,7 +193,7 @@ export const NavigatePagination: React.FC<NavigatePaginationProp> = ({ offset, l
             <button
                 disabled={offset + limit >= total}
                 onClick={() => setOffset((prev) => prev + limit)}
-                className="pagination-navigation-text-padding border rounded-full disabled:opacity-50 text-[#003366] bg-white hover:bg-[#003366] hover:text-white"
+                className="pagination-navigation-text-padding border rounded-full disabled:opacity-50 text-[#003366] bg-white hover:bg-[#003366] hover:text-white cursor-pointer"
                 title="Next"
             >
                 <ChevronRight className="w-4 h-4" />
@@ -215,7 +218,7 @@ export const NavigatePagination: React.FC<NavigatePaginationProp> = ({ offset, l
                     hover:border-[#003366] hover:shadow-md 
                     focus:outline-none focus:border-[#003366]"
             >
-                {[8, 10, 20, 25, 50, 100].map((l) => (
+                {[6, 8, 10, 20, 25, 50, 100].map((l) => (
                     <option key={l} value={l}>
                         {l}
                     </option>

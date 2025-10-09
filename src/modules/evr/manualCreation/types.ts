@@ -68,8 +68,19 @@ export interface EVRManuals {
     name: string;
     code: string | null;
     totalScore: number;
-    status: string;
+    status: 'Draft' | 'Completed' | 'Active';
+    useParameters: boolean;
+    useManpower: boolean;
     empCode: string;
     empName: string;
     createdAt: string;
 };
+
+
+export interface InitEvr {
+    name: string
+    code: string
+    totalScore: number
+    useParameters: boolean
+    useManpower: boolean
+}
